@@ -18,18 +18,18 @@
   .header p{margin-top:2px;font-size:13px;color:#5a6a8a;font-weight:300}
   .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;margin-bottom:20px}
   .dot{width:8px;height:8px;border-radius:50%;background:#4ecdc4;box-shadow:0 0 8px rgba(78,205,196,.5)}
-  .unit-label{color:#5a6a8a;font-size:14px;white-space:nowrap}
   .settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr}
   .settings-col{padding:16px 20px}
   .settings-col+.settings-col{border-left:1px solid rgba(255,255,255,.08)}
-  .col-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .col-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
   .col-header span{font-size:11px;font-weight:600;color:#4ecdc4;text-transform:uppercase;letter-spacing:1.5px}
-  .field{margin-bottom:14px}
-  .field-label{display:block;font-size:12px;font-weight:500;color:#8899bb;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-  .field-input-row{display:flex;align-items:center;gap:8px}
-  .field-input-row input{flex:1;text-align:center;font-size:15px;font-weight:600}
-  .unit-toggle{display:flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
-  .unit-toggle button{background:none;border:none;color:#5a6a8a;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;padding:8px 16px;cursor:pointer;transition:all .2s}
+  .field{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .field-label{font-size:11px;font-weight:600;color:#8899bb;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;flex-shrink:0}
+  .field-input-row{position:relative;flex:1;min-width:0}
+  .field-input-row input{width:100%;padding-right:52px;text-align:left;font-size:14px;font-weight:600}
+  .field-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#5a6a8a;font-size:12px;pointer-events:none;white-space:nowrap}
+  .unit-toggle{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
+  .unit-toggle button{background:none;border:none;color:#5a6a8a;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s}
   .unit-toggle button.active{background:rgba(78,205,196,.2);color:#4ecdc4}
   .unit-toggle button:hover:not(.active){background:rgba(255,255,255,.04);color:#8899bb}
   .table-head{display:grid;grid-template-columns:50px 1fr 1fr 1fr 48px;gap:12px;padding:14px 24px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
@@ -67,7 +67,7 @@
   .site-footer a{color:#4ecdc4;text-decoration:none}
   @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
   @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @media(max-width:600px){body{padding:12px 12px 0}.table-head,.item-row{grid-template-columns:36px 1fr 1fr 1fr 40px;gap:6px;padding:10px 12px}.total-num{font-size:28px}.total-num-secondary{font-size:22px}.settings-grid{grid-template-columns:1fr}.settings-col+.settings-col{border-left:none;border-top:1px solid rgba(255,255,255,.08)}}
+  @media(max-width:600px){body{padding:12px 12px 0}.table-head,.item-row{grid-template-columns:36px 1fr 1fr 1fr 40px;gap:6px;padding:10px 12px}.total-num{font-size:28px}.total-num-secondary{font-size:22px}.settings-grid{grid-template-columns:1fr}.settings-col+.settings-col{border-left:none;border-top:1px solid rgba(255,255,255,.08)}.field{flex-direction:column;align-items:flex-start}.field-input-row{width:100%}}
   /* --- Print / Screen extras --- */
   .print-header{display:none}
   .print-val{display:none}
@@ -148,29 +148,29 @@
         <div class="col-header"><div class="dot"></div><span>Material</span></div>
         <div class="field">
           <label class="field-label" for="sirinaRolne">Coil Width</label>
-          <div class="field-input-row"><input type="number" id="sirinaRolne" value="1250" min="1" aria-label="Coil width" oninput="debouncedCalc()"><span class="unit-label" id="rolnaUnit">mm</span></div>
+          <div class="field-input-row"><input type="number" id="sirinaRolne" value="1250" min="1" aria-label="Coil width" oninput="debouncedCalc()"><span class="field-unit" id="rolnaUnit">mm</span></div>
         </div>
         <div class="field">
-          <label class="field-label" for="jedCena">Unit Price / m</label>
-          <div class="field-input-row"><input type="number" id="jedCena" value="10" min="0" step="0.5" aria-label="Unit price USD/m" oninput="debouncedCalc()"><span class="unit-label">USD</span></div>
+          <label class="field-label" for="jedCena">Unit Price</label>
+          <div class="field-input-row"><input type="number" id="jedCena" value="10" min="0" step="0.5" aria-label="Unit price USD/m" oninput="debouncedCalc()"><span class="field-unit">USD/m</span></div>
         </div>
       </div>
       <div class="settings-col">
         <div class="col-header"><div class="dot" style="background:#ff9050;box-shadow:0 0 8px rgba(255,144,80,.4)"></div><span>Cutting Parameters</span></div>
         <div class="field">
           <label class="field-label" for="kerfInput">Blade Kerf</label>
-          <div class="field-input-row"><input type="number" id="kerfInput" value="2" min="0" step="0.5" aria-label="Blade kerf mm" oninput="debouncedCalc()"><span class="unit-label">mm</span></div>
+          <div class="field-input-row"><input type="number" id="kerfInput" value="2" min="0" step="0.5" aria-label="Blade kerf mm" oninput="debouncedCalc()"><span class="field-unit">mm</span></div>
         </div>
         <div class="field">
-          <label class="field-label" for="safetyMargin">Edge Margin</label>
-          <div class="field-input-row"><input type="number" id="safetyMargin" value="5" min="0" step="1" aria-label="Edge safety margin mm per side" oninput="debouncedCalc()"><span class="unit-label">mm ×2</span></div>
+          <label class="field-label" for="safetyMargin">Edge Margin (×2)</label>
+          <div class="field-input-row"><input type="number" id="safetyMargin" value="5" min="0" step="1" aria-label="Edge safety margin mm per side" oninput="debouncedCalc()"><span class="field-unit">mm</span></div>
         </div>
       </div>
       <div class="settings-col">
         <div class="col-header"><div class="dot" style="background:#e0c64f;box-shadow:0 0 8px rgba(224,198,79,.4)"></div><span>Settings</span></div>
         <div class="field">
-          <label class="field-label" for="cenaSavijanja">Bending Cost / m</label>
-          <div class="field-input-row"><input type="number" id="cenaSavijanja" value="1.5" min="0" step="0.1" aria-label="Bending cost per linear meter" oninput="debouncedCalc()"><span class="unit-label">USD</span></div>
+          <label class="field-label" for="cenaSavijanja">Bending Cost</label>
+          <div class="field-input-row"><input type="number" id="cenaSavijanja" value="1.5" min="0" step="0.1" aria-label="Bending cost per linear meter" oninput="debouncedCalc()"><span class="field-unit">USD/m</span></div>
         </div>
         <div class="field">
           <label class="field-label">Length Mixing</label>
