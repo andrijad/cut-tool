@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Kalkulator za proračun dužine lima iz rolne sa predračunom — shelf-packing algoritam za giljotinsko sečenje">
 <title>3MD Kalkulator lima</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -41,7 +42,7 @@
   .row-num{font-size:13px;color:#3a4a6a;font-weight:600}
   .btn-remove{background:none;border:1px solid rgba(255,80,80,.2);color:#ff5050;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;opacity:.6}
   .btn-remove:hover{opacity:1;background:rgba(255,80,80,.1)}
-  .btn-remove.disabled{opacity:.3;pointer-events:none}
+  .btn-remove:disabled{opacity:.3;cursor:not-allowed}
   .btn-add{background:rgba(78,205,196,.08);border:1px dashed rgba(78,205,196,.3);color:#4ecdc4;border-radius:10px;padding:10px 20px;cursor:pointer;font-size:14px;font-family:'JetBrains Mono',monospace;font-weight:500;transition:all .2s;width:100%;margin:16px 0}
   .btn-add:hover{background:rgba(78,205,196,.15);border-color:rgba(78,205,196,.5)}
   .results{background:linear-gradient(135deg,rgba(78,205,196,.06),rgba(42,183,169,.03));border:1px solid rgba(78,205,196,.15);border-radius:16px;overflow:hidden;animation:fadeIn .4s ease-out}
@@ -210,7 +211,7 @@
 </div>
 
 <div class="site-footer">
-  © 2025 <a href="#">AMMD WEB</a> · Sva prava zadržana
+  © 2026 <a href="#">AMMD WEB</a> · Sva prava zadržana
 </div>
 
 <script>
@@ -278,8 +279,9 @@ function loadFromLocal() {
         duzina: Math.max(0, parseFloat(it.duzina) || 0),
       })).filter(it => it.id > 0);
     }
-    if (d.nextId) nextId = d.nextId;
-    if (d.currentUnit) currentUnit = d.currentUnit;
+    const maxItemId = items.reduce((m, it) => Math.max(m, it.id), 0);
+    nextId = Math.max(d.nextId || 1, maxItemId + 1);
+    if (d.currentUnit === 'cm' || d.currentUnit === 'mm') currentUnit = d.currentUnit;
     if (typeof d.allowMixing === 'boolean') allowMixing = d.allowMixing;
     if (d.sirinaRolne) document.getElementById('sirinaRolne').value = d.sirinaRolne;
     if (d.kerf) document.getElementById('kerfInput').value = d.kerf;
@@ -342,7 +344,7 @@ function render() {
       <input type="number" value="${item.kom}" min="1" data-field="kom" aria-label="Količina ${idx+1}"><span class="print-val">${item.kom}</span>
       <input type="number" value="${item.sirina}" min="0.1" data-field="sirina" aria-label="Širina ${idx+1}"><span class="print-val">${item.sirina}</span>
       <input type="number" value="${item.duzina}" min="0.1" data-field="duzina" aria-label="Dužina ${idx+1}"><span class="print-val">${item.duzina}</span>
-      <button type="button" class="btn-remove ${items.length===1?'disabled':''}" aria-label="Obriši ${idx+1}" data-remove-id="${item.id}">×</button>
+      <button type="button" class="btn-remove" ${items.length===1?'disabled':''} aria-label="Obriši ${idx+1}" data-remove-id="${item.id}">×</button>
     </div>`;
   }).join('');
   calculate();
@@ -399,10 +401,11 @@ function calculate() {
   const shelfResults = shelves.map(shelf => {
     const usedArea = shelf.strips.reduce((s, st) => s + st.sMm * st.dMm, 0);
     const totalArea = usableWidthMm * shelf.dMm;
+    const kerfArea = shelf.strips.length > 1 ? (shelf.strips.length - 1) * kerfMm * shelf.dMm : 0;
     const byLen = {};
     shelf.strips.forEach(st => { if (!byLen[st.dMm]) byLen[st.dMm] = []; byLen[st.dMm].push(st); });
     Object.values(byLen).forEach(arr => arr.sort((a, b) => b.sMm - a.sMm));
-    return { ...shelf, usedArea, totalArea, wasteArea: totalArea - usedArea, efficiency: totalArea > 0 ? usedArea / totalArea * 100 : 0, byLen };
+    return { ...shelf, usedArea, totalArea, wasteArea: totalArea - usedArea - kerfArea, efficiency: totalArea > 0 ? (usedArea + kerfArea) / totalArea * 100 : 0, byLen };
   });
 
   lastShelfResults = shelfResults;
@@ -439,10 +442,11 @@ function calculate() {
   const usedArea = shelfResults.reduce((s, p) => s + p.usedArea, 0);
   const eff = totArea > 0 ? (usedArea / totArea * 100).toFixed(1) : 0;
   const komb = shelfResults.filter(p => Object.keys(p.byLen).length > 1).length;
-  const savM = (ukupnoSavijanjeMm / 1000).toFixed(2);
+  const savMRaw = ukupnoSavijanjeMm / 1000;
+  const savM = savMRaw.toFixed(2);
   const cena = parseFloat(document.getElementById('cenaSavijanja').value) || 0;
   const jedCenaVal = parseFloat(document.getElementById('jedCena').value) || 0;
-  const cenaTotal = Math.round(parseFloat(savM) * cena);
+  const cenaTotal = Math.round(savMRaw * cena);
   const cenaMaterijala = Math.round((totLen / 1000) * jedCenaVal);
   const ukupnaCena = cenaMaterijala + cenaTotal;
   const safeNote = safetyMm > 0 ? ` · ivica ${safetyMm}mm×2` : '';
