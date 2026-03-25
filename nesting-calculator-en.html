@@ -267,7 +267,7 @@ function calculate(){
   const shelves=[];
   allStrips.forEach(strip=>{if(strip.placed)return;let best=-1,bestL=Infinity;for(let i=0;i<shelves.length;i++){const sh=shelves[i];if(!allowMixing&&strip.dMm!==sh.dMm)continue;if(strip.dMm>sh.dMm)continue;const n=sh.widthUsedMm+kerfMm+strip.sMm;if(n<=usableWidthMm){const l=usableWidthMm-n;if(l<bestL){bestL=l;best=i}}}if(best>=0){shelves[best].widthUsedMm+=kerfMm+strip.sMm;shelves[best].strips.push(strip);strip.placed=true}else{shelves.push({dMm:strip.dMm,widthUsedMm:strip.sMm,strips:[strip]});strip.placed=true}});
 
-  const shelfResults=shelves.map(shelf=>{const used=shelf.strips.reduce((s,st)=>s+st.sMm*st.dMm,0);const total=usableWidthMm*shelf.dMm;const kerfArea=shelf.strips.length>1?(shelf.strips.length-1)*kerfMm*shelf.dMm:0;const byLen={};shelf.strips.forEach(st=>{if(!byLen[st.dMm])byLen[st.dMm]=[];byLen[st.dMm].push(st)});Object.values(byLen).forEach(a=>a.sort((a,b)=>b.sMm-a.sMm));return{...shelf,usedArea:used,totalArea:total,wasteArea:total-used-kerfArea,efficiency:total>0?(used+kerfArea)/total*100:0,byLen}});
+  const shelfResults=shelves.map(shelf=>{const used=shelf.strips.reduce((s,st)=>s+st.sMm*st.dMm,0);const total=usableWidthMm*shelf.dMm;const kerfArea=shelf.strips.length>1?(shelf.strips.length-1)*kerfMm*shelf.dMm:0;const byLen={};shelf.strips.forEach(st=>{if(!byLen[st.dMm])byLen[st.dMm]=[];byLen[st.dMm].push(st)});Object.values(byLen).forEach(a=>a.sort((a,b)=>b.sMm-a.sMm));return{...shelf,usedArea:used,kerfArea,totalArea:total,wasteArea:total-used-kerfArea,efficiency:total>0?(used+kerfArea)/total*100:0,byLen}});
 
   lastShelfResults=shelfResults;lastUsableWidthMm=usableWidthMm;
 
@@ -288,8 +288,8 @@ function calculate(){
   });
   body.innerHTML=html;
 
-  const totLen=shelfResults.reduce((s,p)=>s+p.dMm,0);const totArea=shelfResults.reduce((s,p)=>s+p.totalArea,0);const usedArea=shelfResults.reduce((s,p)=>s+p.usedArea,0);
-  const eff=totArea>0?(usedArea/totArea*100).toFixed(1):0;const komb=shelfResults.filter(p=>Object.keys(p.byLen).length>1).length;
+  const totLen=shelfResults.reduce((s,p)=>s+p.dMm,0);const totArea=shelfResults.reduce((s,p)=>s+p.totalArea,0);const usedArea=shelfResults.reduce((s,p)=>s+p.usedArea,0);const totKerfArea=shelfResults.reduce((s,p)=>s+p.kerfArea,0);
+  const eff=totArea>0?((usedArea+totKerfArea)/totArea*100).toFixed(1):0;const komb=shelfResults.filter(p=>Object.keys(p.byLen).length>1).length;
   const bendMRaw=bendingMm/1000;const bendM=bendMRaw.toFixed(2);const cena=parseFloat(document.getElementById('cenaSavijanja').value)||0;const cenaTotal=(bendMRaw*cena).toFixed(2);
   const jedCenaVal=parseFloat(document.getElementById('jedCena').value)||0;
   const cenaMaterijala=((totLen/1000)*jedCenaVal).toFixed(2);

@@ -405,7 +405,7 @@ function calculate() {
     const byLen = {};
     shelf.strips.forEach(st => { if (!byLen[st.dMm]) byLen[st.dMm] = []; byLen[st.dMm].push(st); });
     Object.values(byLen).forEach(arr => arr.sort((a, b) => b.sMm - a.sMm));
-    return { ...shelf, usedArea, totalArea, wasteArea: totalArea - usedArea - kerfArea, efficiency: totalArea > 0 ? (usedArea + kerfArea) / totalArea * 100 : 0, byLen };
+    return { ...shelf, usedArea, kerfArea, totalArea, wasteArea: totalArea - usedArea - kerfArea, efficiency: totalArea > 0 ? (usedArea + kerfArea) / totalArea * 100 : 0, byLen };
   });
 
   lastShelfResults = shelfResults;
@@ -440,7 +440,8 @@ function calculate() {
   const totLen = shelfResults.reduce((s, p) => s + p.dMm, 0);
   const totArea = shelfResults.reduce((s, p) => s + p.totalArea, 0);
   const usedArea = shelfResults.reduce((s, p) => s + p.usedArea, 0);
-  const eff = totArea > 0 ? (usedArea / totArea * 100).toFixed(1) : 0;
+  const totKerfArea = shelfResults.reduce((s, p) => s + p.kerfArea, 0);
+  const eff = totArea > 0 ? ((usedArea + totKerfArea) / totArea * 100).toFixed(1) : 0;
   const komb = shelfResults.filter(p => Object.keys(p.byLen).length > 1).length;
   const savMRaw = ukupnoSavijanjeMm / 1000;
   const savM = savMRaw.toFixed(2);
