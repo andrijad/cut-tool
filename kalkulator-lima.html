@@ -174,11 +174,11 @@
         </div>
         <div class="field">
           <span class="field-label">Mešanje dužina</span>
-          <div class="unit-toggle" id="mixToggle" role="group" aria-label="Režim mešanja"><button type="button" class="active" onclick="setMixMode(true)">Kombinuj</button><button type="button" onclick="setMixMode(false)">Strict</button></div>
+          <div class="unit-toggle" id="mixToggle" role="group" aria-label="Režim mešanja"><button type="button" class="active" aria-pressed="true" onclick="setMixMode(true)">Kombinuj</button><button type="button" aria-pressed="false" onclick="setMixMode(false)">Strict</button></div>
         </div>
         <div class="field">
           <span class="field-label">Jedinica mere</span>
-          <div class="unit-toggle" id="unitToggle" role="group" aria-label="Izbor jedinice mere"><button type="button" class="active" onclick="setUnit('cm')">cm</button><button type="button" onclick="setUnit('mm')">mm</button></div>
+          <div class="unit-toggle" id="unitToggle" role="group" aria-label="Izbor jedinice mere"><button type="button" class="active" aria-pressed="true" onclick="setUnit('cm')">cm</button><button type="button" aria-pressed="false" onclick="setUnit('mm')">mm</button></div>
         </div>
       </div>
     </div>
@@ -190,7 +190,7 @@
     <div style="padding:0 24px 8px"><button type="button" class="btn-add" onclick="addItem()">+ Dodaj stavku</button></div>
   </div>
 
-  <button type="button" class="btn-print" onclick="window.print()">Stampaj predracun</button>
+  <button type="button" class="btn-print" onclick="window.print()">Štampaj predračun</button>
 
   <div class="results">
     <div class="results-header"><div class="dot"></div><span>Rezultat proračuna</span></div>
@@ -270,7 +270,14 @@ function loadFromLocal() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return false;
     const d = JSON.parse(raw);
-    if (d.items && d.items.length) items = d.items;
+    if (d.items && d.items.length) {
+      items = d.items.map(it => ({
+        id: parseInt(it.id) || 0,
+        kom: Math.max(0, parseFloat(it.kom) || 0),
+        sirina: Math.max(0, parseFloat(it.sirina) || 0),
+        duzina: Math.max(0, parseFloat(it.duzina) || 0),
+      })).filter(it => it.id > 0);
+    }
     if (d.nextId) nextId = d.nextId;
     if (d.currentUnit) currentUnit = d.currentUnit;
     if (typeof d.allowMixing === 'boolean') allowMixing = d.allowMixing;
@@ -283,8 +290,8 @@ function loadFromLocal() {
     document.getElementById('rolnaUnit').textContent = currentUnit;
     document.getElementById('thSirina').textContent = 'Širina (' + currentUnit + ')';
     document.getElementById('thDuzina').textContent = 'Dužina (' + currentUnit + ')';
-    document.querySelectorAll('#unitToggle button').forEach(btn => btn.classList.toggle('active', btn.textContent === currentUnit));
-    document.querySelectorAll('#mixToggle button').forEach((btn, i) => btn.classList.toggle('active', allowMixing ? i === 0 : i === 1));
+    document.querySelectorAll('#unitToggle button').forEach(btn => { const a = btn.textContent === currentUnit; btn.classList.toggle('active', a); btn.setAttribute('aria-pressed', a); });
+    document.querySelectorAll('#mixToggle button').forEach((btn, i) => { const a = allowMixing ? i === 0 : i === 1; btn.classList.toggle('active', a); btn.setAttribute('aria-pressed', a); });
     return true;
   } catch(e) { return false; }
 }
@@ -299,21 +306,30 @@ function setUnit(unit) {
   document.getElementById('rolnaUnit').textContent = unit;
   document.getElementById('thSirina').textContent = 'Širina (' + unit + ')';
   document.getElementById('thDuzina').textContent = 'Dužina (' + unit + ')';
-  document.querySelectorAll('#unitToggle button').forEach(btn => btn.classList.toggle('active', btn.textContent === unit));
+  document.querySelectorAll('#unitToggle button').forEach(btn => {
+    const isActive = btn.textContent === unit;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive);
+  });
   render();
 }
 function setMixMode(allow) {
   allowMixing = allow;
-  document.querySelectorAll('#mixToggle button').forEach((btn, i) => btn.classList.toggle('active', allow ? i === 0 : i === 1));
+  document.querySelectorAll('#mixToggle button').forEach((btn, i) => {
+    const isActive = allow ? i === 0 : i === 1;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive);
+  });
   calculate();
 }
 function addItem() {
   items.push({ id: nextId++, kom: 1, sirina: currentUnit === 'mm' ? 100 : 10, duzina: currentUnit === 'mm' ? 1000 : 100 });
   render();
 }
-function removeItem(id) { if (items.length <= 1) return; items = items.filter(i => i.id !== id); render(); }
+function removeItem(id) { if (items.length <= 1) return; clearTimeout(debounceTimer); items = items.filter(i => i.id !== id); render(); }
 function updateItem(id, field, value) {
-  items = items.map(i => i.id === id ? { ...i, [field]: parseFloat(value) || 0 } : i);
+  const parsed = parseFloat(value) || 0;
+  items = items.map(i => i.id === id ? { ...i, [field]: Math.max(0, parsed) } : i);
   debouncedCalc();
 }
 
@@ -321,12 +337,12 @@ function render() {
   const c = document.getElementById('itemsContainer');
   c.innerHTML = items.map((item, idx) => {
     const inv = item.kom <= 0 || item.sirina <= 0 || item.duzina <= 0;
-    return `<div class="item-row ${inv ? 'invalid' : ''}">
+    return `<div class="item-row ${inv ? 'invalid' : ''}" data-item-id="${item.id}">
       <span class="row-num">${String(idx+1).padStart(2,'0')}</span>
-      <input type="number" value="${item.kom}" min="1" aria-label="Količina ${idx+1}" oninput="updateItem(${item.id},'kom',this.value)"><span class="print-val">${item.kom}</span>
-      <input type="number" value="${item.sirina}" min="0.1" aria-label="Širina ${idx+1}" oninput="updateItem(${item.id},'sirina',this.value)"><span class="print-val">${item.sirina}</span>
-      <input type="number" value="${item.duzina}" min="0.1" aria-label="Dužina ${idx+1}" oninput="updateItem(${item.id},'duzina',this.value)"><span class="print-val">${item.duzina}</span>
-      <button type="button" class="btn-remove ${items.length===1?'disabled':''}" aria-label="Obriši ${idx+1}" onclick="removeItem(${item.id})">×</button>
+      <input type="number" value="${item.kom}" min="1" data-field="kom" aria-label="Količina ${idx+1}"><span class="print-val">${item.kom}</span>
+      <input type="number" value="${item.sirina}" min="0.1" data-field="sirina" aria-label="Širina ${idx+1}"><span class="print-val">${item.sirina}</span>
+      <input type="number" value="${item.duzina}" min="0.1" data-field="duzina" aria-label="Dužina ${idx+1}"><span class="print-val">${item.duzina}</span>
+      <button type="button" class="btn-remove ${items.length===1?'disabled':''}" aria-label="Obriši ${idx+1}" data-remove-id="${item.id}">×</button>
     </div>`;
   }).join('');
   calculate();
@@ -335,7 +351,7 @@ function render() {
 // ========== MAIN CALCULATION ==========
 function calculate() {
   const sirinaRolneMm = toMm(parseFloat(document.getElementById('sirinaRolne').value) || 0);
-  const kerfMm = Math.round(parseFloat(document.getElementById('kerfInput').value) || 0);
+  const kerfMm = parseFloat(document.getElementById('kerfInput').value) || 0;
   const safetyMm = Math.round(parseFloat(document.getElementById('safetyMargin').value) || 0);
   const usableWidthMm = sirinaRolneMm - safetyMm * 2;
 
@@ -536,10 +552,31 @@ function drawNesting() {
   });
 }
 
+// ========== EVENT DELEGATION ==========
+function initDelegation() {
+  const c = document.getElementById('itemsContainer');
+  c.addEventListener('input', (e) => {
+    const row = e.target.closest('[data-item-id]');
+    if (!row) return;
+    const id = parseInt(row.dataset.itemId);
+    const field = e.target.dataset.field;
+    if (id && field) updateItem(id, field, e.target.value);
+  });
+  c.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-remove-id]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.removeId);
+    if (id) removeItem(id);
+  });
+}
+
 // ========== INIT ==========
 loadFromLocal();
+initDelegation();
 render();
 document.getElementById('printDate').textContent = new Date().toLocaleDateString('sr-RS');
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawNesting, 200); });
 </script>
 </body>
 </html>

@@ -174,11 +174,11 @@
         </div>
         <div class="field">
           <span class="field-label">Length Mixing</span>
-          <div class="unit-toggle" id="mixToggle" role="group" aria-label="Mixing mode"><button type="button" class="active" onclick="setMixMode(true)">Combined</button><button type="button" onclick="setMixMode(false)">Strict</button></div>
+          <div class="unit-toggle" id="mixToggle" role="group" aria-label="Mixing mode"><button type="button" class="active" aria-pressed="true" onclick="setMixMode(true)">Combined</button><button type="button" aria-pressed="false" onclick="setMixMode(false)">Strict</button></div>
         </div>
         <div class="field">
           <span class="field-label">Unit</span>
-          <div class="unit-toggle" id="unitToggle" role="group" aria-label="Unit selection"><button type="button" onclick="setUnit('cm')">cm</button><button type="button" class="active" onclick="setUnit('mm')">mm</button></div>
+          <div class="unit-toggle" id="unitToggle" role="group" aria-label="Unit selection"><button type="button" aria-pressed="false" onclick="setUnit('cm')">cm</button><button type="button" class="active" aria-pressed="true" onclick="setUnit('mm')">mm</button></div>
         </div>
       </div>
     </div>
@@ -235,25 +235,25 @@ function fmtMm(mm){if(mm>=1000)return(mm/1000).toFixed(2)+' m';if(currentUnit===
 
 const LS_KEY='3md_calc_en';
 function saveToLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify({items,currentUnit,allowMixing,nextId,sirinaRolne:document.getElementById('sirinaRolne').value,kerf:document.getElementById('kerfInput').value,safety:document.getElementById('safetyMargin').value,cena:document.getElementById('cenaSavijanja').value,jedCena:document.getElementById('jedCena').value}))}catch(e){}}
-function loadFromLocal(){try{const r=localStorage.getItem(LS_KEY);if(!r)return false;const d=JSON.parse(r);if(d.items&&d.items.length)items=d.items;if(d.nextId)nextId=d.nextId;if(d.currentUnit)currentUnit=d.currentUnit;if(typeof d.allowMixing==='boolean')allowMixing=d.allowMixing;if(d.sirinaRolne)document.getElementById('sirinaRolne').value=d.sirinaRolne;if(d.kerf)document.getElementById('kerfInput').value=d.kerf;if(d.safety)document.getElementById('safetyMargin').value=d.safety;if(d.cena)document.getElementById('cenaSavijanja').value=d.cena;if(d.jedCena)document.getElementById('jedCena').value=d.jedCena;document.getElementById('rolnaUnit').textContent=currentUnit;document.getElementById('thSirina').textContent='Width ('+currentUnit+')';document.getElementById('thDuzina').textContent='Length ('+currentUnit+')';document.querySelectorAll('#unitToggle button').forEach(b=>b.classList.toggle('active',b.textContent===currentUnit));document.querySelectorAll('#mixToggle button').forEach((b,i)=>b.classList.toggle('active',allowMixing?i===0:i===1));return true}catch(e){return false}}
+function loadFromLocal(){try{const r=localStorage.getItem(LS_KEY);if(!r)return false;const d=JSON.parse(r);if(d.items&&d.items.length)items=d.items.map(it=>({id:parseInt(it.id)||0,kom:Math.max(0,parseFloat(it.kom)||0),sirina:Math.max(0,parseFloat(it.sirina)||0),duzina:Math.max(0,parseFloat(it.duzina)||0)})).filter(it=>it.id>0);if(d.nextId)nextId=d.nextId;if(d.currentUnit)currentUnit=d.currentUnit;if(typeof d.allowMixing==='boolean')allowMixing=d.allowMixing;if(d.sirinaRolne)document.getElementById('sirinaRolne').value=d.sirinaRolne;if(d.kerf)document.getElementById('kerfInput').value=d.kerf;if(d.safety)document.getElementById('safetyMargin').value=d.safety;if(d.cena)document.getElementById('cenaSavijanja').value=d.cena;if(d.jedCena)document.getElementById('jedCena').value=d.jedCena;document.getElementById('rolnaUnit').textContent=currentUnit;document.getElementById('thSirina').textContent='Width ('+currentUnit+')';document.getElementById('thDuzina').textContent='Length ('+currentUnit+')';document.querySelectorAll('#unitToggle button').forEach(b=>{const a=b.textContent===currentUnit;b.classList.toggle('active',a);b.setAttribute('aria-pressed',a)});document.querySelectorAll('#mixToggle button').forEach((b,i)=>{const a=allowMixing?i===0:i===1;b.classList.toggle('active',a);b.setAttribute('aria-pressed',a)});return true}catch(e){return false}}
 
-function setUnit(unit){if(unit===currentUnit)return;const f=unit==='mm'?10:0.1;document.getElementById('sirinaRolne').value=Math.round(parseFloat(document.getElementById('sirinaRolne').value)*f*100)/100;items=items.map(i=>({...i,sirina:Math.round(i.sirina*f*100)/100,duzina:Math.round(i.duzina*f*100)/100}));currentUnit=unit;document.getElementById('rolnaUnit').textContent=unit;document.getElementById('thSirina').textContent='Width ('+unit+')';document.getElementById('thDuzina').textContent='Length ('+unit+')';document.querySelectorAll('#unitToggle button').forEach(b=>b.classList.toggle('active',b.textContent===unit));render()}
-function setMixMode(a){allowMixing=a;document.querySelectorAll('#mixToggle button').forEach((b,i)=>b.classList.toggle('active',a?i===0:i===1));calculate()}
+function setUnit(unit){if(unit===currentUnit)return;const f=unit==='mm'?10:0.1;document.getElementById('sirinaRolne').value=Math.round(parseFloat(document.getElementById('sirinaRolne').value)*f*100)/100;items=items.map(i=>({...i,sirina:Math.round(i.sirina*f*100)/100,duzina:Math.round(i.duzina*f*100)/100}));currentUnit=unit;document.getElementById('rolnaUnit').textContent=unit;document.getElementById('thSirina').textContent='Width ('+unit+')';document.getElementById('thDuzina').textContent='Length ('+unit+')';document.querySelectorAll('#unitToggle button').forEach(b=>{const a=b.textContent===unit;b.classList.toggle('active',a);b.setAttribute('aria-pressed',a)});render()}
+function setMixMode(a){allowMixing=a;document.querySelectorAll('#mixToggle button').forEach((b,i)=>{const act=a?i===0:i===1;b.classList.toggle('active',act);b.setAttribute('aria-pressed',act)});calculate()}
 function addItem(){items.push({id:nextId++,kom:1,sirina:currentUnit==='mm'?100:10,duzina:currentUnit==='mm'?1000:100});render()}
-function removeItem(id){if(items.length<=1)return;items=items.filter(i=>i.id!==id);render()}
-function updateItem(id,field,value){items=items.map(i=>i.id===id?{...i,[field]:parseFloat(value)||0}:i);debouncedCalc()}
+function removeItem(id){if(items.length<=1)return;clearTimeout(debounceTimer);items=items.filter(i=>i.id!==id);render()}
+function updateItem(id,field,value){const parsed=parseFloat(value)||0;items=items.map(i=>i.id===id?{...i,[field]:Math.max(0,parsed)}:i);debouncedCalc()}
 
 function render(){
   document.getElementById('itemsContainer').innerHTML=items.map((item,idx)=>{
     const inv=item.kom<=0||item.sirina<=0||item.duzina<=0;
-    return`<div class="item-row ${inv?'invalid':''}"><span class="row-num">${String(idx+1).padStart(2,'0')}</span><input type="number" value="${item.kom}" min="1" aria-label="Qty ${idx+1}" oninput="updateItem(${item.id},'kom',this.value)"><span class="print-val">${item.kom}</span><input type="number" value="${item.sirina}" min="0.1" aria-label="Width ${idx+1}" oninput="updateItem(${item.id},'sirina',this.value)"><span class="print-val">${item.sirina}</span><input type="number" value="${item.duzina}" min="0.1" aria-label="Length ${idx+1}" oninput="updateItem(${item.id},'duzina',this.value)"><span class="print-val">${item.duzina}</span><button type="button" class="btn-remove ${items.length===1?'disabled':''}" aria-label="Remove ${idx+1}" onclick="removeItem(${item.id})">×</button></div>`;
+    return`<div class="item-row ${inv?'invalid':''}" data-item-id="${item.id}"><span class="row-num">${String(idx+1).padStart(2,'0')}</span><input type="number" value="${item.kom}" min="1" data-field="kom" aria-label="Qty ${idx+1}"><span class="print-val">${item.kom}</span><input type="number" value="${item.sirina}" min="0.1" data-field="sirina" aria-label="Width ${idx+1}"><span class="print-val">${item.sirina}</span><input type="number" value="${item.duzina}" min="0.1" data-field="duzina" aria-label="Length ${idx+1}"><span class="print-val">${item.duzina}</span><button type="button" class="btn-remove ${items.length===1?'disabled':''}" aria-label="Remove ${idx+1}" data-remove-id="${item.id}">×</button></div>`;
   }).join('');
   calculate();
 }
 
 function calculate(){
   const sirinaRolneMm=toMm(parseFloat(document.getElementById('sirinaRolne').value)||0);
-  const kerfMm=Math.round(parseFloat(document.getElementById('kerfInput').value)||0);
+  const kerfMm=parseFloat(document.getElementById('kerfInput').value)||0;
   const safetyMm=Math.round(parseFloat(document.getElementById('safetyMargin').value)||0);
   const usableWidthMm=sirinaRolneMm-safetyMm*2;
 
@@ -327,8 +327,16 @@ function drawNesting(){
   });
 }
 
-loadFromLocal();render();
+function initDelegation(){
+  const c=document.getElementById('itemsContainer');
+  c.addEventListener('input',(e)=>{const row=e.target.closest('[data-item-id]');if(!row)return;const id=parseInt(row.dataset.itemId);const field=e.target.dataset.field;if(id&&field)updateItem(id,field,e.target.value)});
+  c.addEventListener('click',(e)=>{const btn=e.target.closest('[data-remove-id]');if(!btn)return;const id=parseInt(btn.dataset.removeId);if(id)removeItem(id)});
+}
+
+loadFromLocal();initDelegation();render();
 document.getElementById('printDate').textContent = new Date().toLocaleDateString('en-GB');
+let resizeTimer;
+window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(drawNesting,200)});
 </script>
 </body>
 </html>
