@@ -2,6 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<!-- GA4: consent baseline — synchronous, no network request -->
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default',{'analytics_storage':'denied','ad_storage':'denied','wait_for_update':500});</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ═══ TITLE TAG ═══ -->
@@ -717,6 +719,39 @@ body {
 .site-footer a { color: var(--teal); text-decoration: underline; font-weight: 600; }
 .site-footer a:hover { text-decoration: none; filter: brightness(0.8); }
 
+/* ── COOKIE CONSENT ── */
+#ct-consent {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 200;
+  background: var(--bg2);
+  border-top: 1px solid var(--border2);
+  padding: 12px 20px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-2);
+  box-shadow: 0 -4px 16px rgba(0,0,0,.15);
+}
+#ct-consent .ct-btns { display: flex; gap: 8px; flex-shrink: 0; }
+#ct-consent .ct-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  transition: all .2s;
+}
+#ct-consent .ct-accept { background: var(--teal); color: #fff; border-color: transparent; }
+#ct-consent .ct-accept:hover { filter: brightness(.9); }
+#ct-consent .ct-decline { background: transparent; color: var(--text-3); }
+#ct-consent .ct-decline:hover { background: var(--surface); }
+
 /* ── PRINT ── */
 .print-header { display: none; }
 .print-val { display: none; }
@@ -1053,10 +1088,18 @@ body {
       <p>CutTool funziona interamente nel tuo browser. Niente da installare, niente da registrare, niente viene archiviato su alcun server.</p>
     </div>
   </div>
+  <!-- COOKIE CONSENT BAR -->
+  <div id="ct-consent" role="dialog" aria-live="polite">
+    <span>Utilizziamo Google Analytics per capire come viene utilizzato CutTool. Non vengono raccolti dati personali. <a href="#privacy-policy" onclick="togglePrivacy()" style="color:var(--teal);text-decoration:underline">Learn more</a></span>
+    <div class="ct-btns">
+      <button class="ct-btn ct-accept" onclick="setCookieConsent(true)">Accetta</button>
+      <button class="ct-btn ct-decline" onclick="setCookieConsent(false)">Rifiuta</button>
+    </div>
+  </div>
 
   </main>
 
-  <div class="site-footer">© 2026 · <a href="#privacy-policy" onclick="togglePrivacy()">Privacy</a> · <a href="https://cuttool.app/sitemap.xml" target="_blank" rel="noopener noreferrer">Mappa del sito</a> · Tutti i diritti riservati · <a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Torna su ↑</a></div>
+  <div class="site-footer">© 2026 by AMMD WEB · <a href="#privacy-policy" onclick="togglePrivacy()">Privacy</a> · <a href="https://cuttool.app/sitemap.xml" target="_blank" rel="noopener noreferrer">Mappa del sito</a> · Tutti i diritti riservati · <a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Torna su ↑</a></div>
 
   <!-- PRIVACY POLICY -->
   <div id="privacy-modal" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);backdrop-filter:blur(3px)" onclick="if(event.target===this)togglePrivacy()">
@@ -1067,7 +1110,7 @@ body {
       </div>
       <p style="font-size:14px;color:var(--text-2);line-height:1.7;margin-bottom:10px">CutTool elabora tutti i dati <strong style="color:var(--text)">localmente nel tuo browser</strong>. Nessuna dimensione di profilo, prezzo o risultato di calcolo viene trasmesso a un server o memorizzato in un database.</p>
       <p style="font-size:14px;color:var(--text-2);line-height:1.7;margin-bottom:10px">Gli unici dati memorizzati sul tuo dispositivo sono le ultime impostazioni utilizzate (larghezza bobina, prezzi, preferenze unità), salvati in <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--teal)">localStorage</code>. Questi dati non lasciano mai il tuo dispositivo.</p>
-      <p style="font-size:14px;color:var(--text-2);line-height:1.7;margin-bottom:10px">CutTool non utilizza cookie di tracciamento, script di analisi o pubblicità di terze parti. L'unica risorsa esterna caricata è il font DM Sans da Google Fonts.</p>
+      <p style="font-size:14px;color:var(--text-2);line-height:1.7;margin-bottom:10px">CutTool utilizza <strong style="color:var(--text)">Google Analytics 4</strong> per raccogliere dati di utilizzo anonimi (pagine visitate, durata della sessione, tipo di browser). Se rifiuti i cookie analitici, non viene effettuato alcun tracciamento e nessun dato viene inviato a Google. Non vengono utilizzati cookie pubblicitari. Tutti i font sono ospitati localmente — nessuna richiesta di font esterna.</p>
       <p style="font-size:14px;color:var(--text-2);line-height:1.7">Nessun dato personale viene raccolto. Nessun account richiesto. Nessun dato condiviso con terze parti.</p>
     </div>
   </div>
@@ -1479,6 +1522,35 @@ render();
 document.getElementById('printDate').textContent = new Date().toLocaleDateString('it-IT');
 let resizeTimer;
 window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawNesting, 200); });
+</script>
+<!-- GA4: lazy loader — fires only after consent, uses idle time -->
+<script>
+(function(){
+  var GA='G-FR900MCX37';
+  function loadGA(){
+    if(window._gaLoaded)return;window._gaLoaded=1;
+    var s=document.createElement('script');
+    s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+GA;
+    document.head.appendChild(s);
+    s.onload=function(){
+      if(localStorage.getItem('ct_consent')==='1')gtag('consent','update',{'analytics_storage':'granted'});
+      gtag('js',new Date());gtag('config',GA);
+    };
+  }
+  window._loadGA=loadGA;
+  if(localStorage.getItem('ct_consent')==='1'){
+    'requestIdleCallback'in window
+      ?requestIdleCallback(loadGA,{timeout:2500})
+      :addEventListener('load',function(){setTimeout(loadGA,300)},{once:true});
+  }
+  var bar=document.getElementById('ct-consent');
+  if(bar&&localStorage.getItem('ct_consent')===null)bar.style.display='flex';
+})();
+function setCookieConsent(v){
+  localStorage.setItem('ct_consent',v?'1':'0');
+  var b=document.getElementById('ct-consent');if(b)b.style.display='none';
+  if(v&&window._loadGA)window._loadGA();
+}
 </script>
 </body>
 </html>
