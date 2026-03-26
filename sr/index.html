@@ -151,9 +151,47 @@
 
 <!-- ═══ SCHEMA MARKUP ═══ -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/dm-sans-v15-latin-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/dm-sans-v15-latin-700.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+/* dm-sans-400 (Regular) */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-sans-v15-latin-regular.woff2') format('woff2');
+}
+
+/* dm-sans-500 (Medium) */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-sans-v15-latin-500.woff2') format('woff2');
+}
+
+/* dm-sans-600 (Semi-Bold) */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/dm-sans-v15-latin-600.woff2') format('woff2');
+}
+
+/* dm-sans-700 (Bold) */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-v15-latin-700.woff2') format('woff2');
+}
+</style>
 
 <style>
 /* ── TOKENS ── */
@@ -206,22 +244,22 @@
   --border:    rgba(0,0,0,.12);
   --border2:   rgba(0,0,0,.22);
 
-  /* Accent — teal */
-  --teal:      #0a8a83;
-  --teal-dim:  rgba(10,138,131,.09);
-  --teal-glow: rgba(10,138,131,.07);
-
   /* Accent — amber */
   --amber:     #906010;
   --amber-dim: rgba(144,96,16,.09);
 
   /* Text */
   --text:      #0e1218;
-  --text-2:    #3a4555;
-  --text-3:    #8090a4;
+  --text-2:    #454f5b;
+  --text-3:    #5c6a7a;
 
   /* Status */
-  --red:       #c02a2a;
+  --red:       #b31d1d;
+
+  /* Accent — teal (links/headings on white bg) */
+  --teal:      #08736d;
+  --teal-dim:  rgba(8,115,109,.09);
+  --teal-glow: rgba(8,115,109,.07);
 }
 
 *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
@@ -498,7 +536,17 @@ body {
 }
 .r-warn { color: var(--amber); }
 .r-error { color: var(--red); }
-.r-dim { color: var(--text-3); }
+.r-dim { color: var(--text-3); font-size: 11px !important; font-weight: 500; }
+
+/* ── ACCESSIBILITY WEIGHT FIXES ── */
+.eff-label, .pass-label, .total-row-sub, .vat-note { font-weight: 500; }
+
+/* ── CLS FIX ── */
+#resultsWrap {
+  min-height: 250px;
+  contain: layout;
+  overflow: hidden;
+}
 
 /* ── TOTALS ── */
 .total-section { border-top: 1px solid rgba(46,184,173,.09); }
@@ -666,7 +714,8 @@ body {
   border-top: 1px solid var(--border);
   margin-top: 8px;
 }
-.site-footer a { color: var(--teal); text-decoration: none; }
+.site-footer a { color: var(--teal); text-decoration: underline; font-weight: 600; }
+.site-footer a:hover { text-decoration: none; filter: brightness(0.8); }
 
 /* ── PRINT ── */
 .print-header { display: none; }
@@ -758,16 +807,18 @@ body {
   <!-- HEADER -->
   <div class="header">
     <div class="header-left">
-      <div class="header-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="4" rx="1"/>
-          <rect x="3" y="10" width="12" height="4" rx="1"/>
-          <rect x="3" y="17" width="15" height="4" rx="1"/>
-        </svg>
-      </div>
-      <div>
-        <h1>CutTool — Proračun dužine rolne za limene profile</h1>
-      </div>
+      <a href="/" aria-label="CutTool home" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit">
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="4" rx="1"/>
+            <rect x="3" y="10" width="12" height="4" rx="1"/>
+            <rect x="3" y="17" width="15" height="4" rx="1"/>
+          </svg>
+        </div>
+        <div>
+          <h1>CutTool — Proračun dužine rolne za limene profile</h1>
+        </div>
+      </a>
     </div>
     <div class="header-actions">
       <select class="lang-switcher" onchange="window.location.href=this.value" aria-label="Select language">
@@ -785,6 +836,8 @@ body {
       </button>
     </div>
   </div>
+
+  <main>
 
   <!-- OPTIONS ACCORDION -->
   <button class="options-toggle" id="optionsToggle" onclick="toggleOptions()" aria-expanded="false" aria-controls="optionsPanel">
@@ -1001,7 +1054,9 @@ body {
     </div>
   </div>
 
-  <div class="site-footer">© 2026 <a href="#">AMMD WEB</a> · <a href="#privacy-policy" onclick="togglePrivacy()">Politika privatnosti</a> · <a href="https://cuttool.app/sitemap.xml">Mapa sajta</a> · Sva prava zadržana</div>
+  </main>
+
+  <div class="site-footer">© 2026 · <a href="#privacy-policy" onclick="togglePrivacy()">Politika privatnosti</a> · <a href="https://cuttool.app/sitemap.xml" target="_blank" rel="noopener noreferrer">Mapa sajta</a> · Sva prava zadržana · <a href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">Nazad na vrh ↑</a></div>
 
   <!-- PRIVACY POLICY -->
   <div id="privacy-modal" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);backdrop-filter:blur(3px)" onclick="if(event.target===this)togglePrivacy()">
