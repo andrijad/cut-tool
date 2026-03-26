@@ -3,221 +3,638 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Kalkulator za proračun dužine lima iz rolne sa predračunom — shelf-packing algoritam za giljotinsko sečenje">
-<title>3MD Kalkulator lima</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  body{min-height:100vh;background:linear-gradient(165deg,#0a0e17 0%,#131b2e 40%,#1a1a2e 100%);color:#e0e6f0;font-family:'JetBrains Mono','Fira Code',monospace;padding:24px 24px 0}
-  input[type="number"]{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e0e6f0;padding:10px 12px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:15px;width:100%;transition:all .2s;outline:none;-moz-appearance:textfield}
-  input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none}
-  input[type="number"]:focus{border-color:#4ecdc4;box-shadow:0 0 0 3px rgba(78,205,196,.15);background:rgba(255,255,255,.07)}
-  .wrap{max-width:900px;margin:0 auto}
-  .header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
-  .header-icon{width:48px;height:48px;background:linear-gradient(135deg,#4ecdc4,#2ab7a9);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;box-shadow:0 4px 20px rgba(78,205,196,.3)}
-  .header h1{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.5px;background:linear-gradient(135deg,#fff,#8899bb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .header p{margin-top:2px;font-size:13px;color:#5a6a8a;font-weight:300}
-  .card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;margin-bottom:20px}
-  .dot{width:8px;height:8px;border-radius:50%;background:#4ecdc4;box-shadow:0 0 8px rgba(78,205,196,.5)}
-  .settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr}
-  .settings-col{padding:16px 20px}
-  .settings-col+.settings-col{border-left:1px solid rgba(255,255,255,.08)}
-  .col-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-  .col-header span{font-size:11px;font-weight:600;color:#4ecdc4;text-transform:uppercase;letter-spacing:1.5px}
-  .field{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-  .field-label{font-size:11px;font-weight:600;color:#8899bb;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;flex-shrink:0}
-  .field-input-row{position:relative;flex:1;min-width:0}
-  .field-input-row input{width:100%;padding-right:52px;text-align:left;font-size:14px;font-weight:600}
-  .field-unit{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#5a6a8a;font-size:12px;pointer-events:none;white-space:nowrap}
-  .unit-toggle{display:inline-flex;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden}
-  .unit-toggle button{background:none;border:none;color:#5a6a8a;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;padding:6px 12px;cursor:pointer;transition:all .2s}
-  .unit-toggle button.active{background:rgba(78,205,196,.2);color:#4ecdc4}
-  .unit-toggle button:hover:not(.active){background:rgba(255,255,255,.04);color:#8899bb}
-  .table-head{display:grid;grid-template-columns:50px 1fr 1fr 1fr 48px;gap:12px;padding:14px 24px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
-  .table-head span{font-size:11px;font-weight:600;color:#4a5a7a;text-transform:uppercase;letter-spacing:1.5px}
-  .item-row{display:grid;grid-template-columns:50px 1fr 1fr 1fr 48px;gap:12px;padding:12px 24px;align-items:center;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;animation:slideIn .3s ease-out}
-  .item-row:hover{background:rgba(255,255,255,.02)}
-  .item-row.invalid{background:rgba(255,80,80,.04)}
-  .item-row.invalid input{border-color:rgba(255,80,80,.3)}
-  .row-num{font-size:13px;color:#3a4a6a;font-weight:600}
-  .btn-remove{background:none;border:1px solid rgba(255,80,80,.2);color:#ff5050;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;opacity:.6}
-  .btn-remove:hover{opacity:1;background:rgba(255,80,80,.1)}
-  .btn-remove:disabled{opacity:.3;cursor:not-allowed}
-  .btn-add{background:rgba(78,205,196,.08);border:1px dashed rgba(78,205,196,.3);color:#4ecdc4;border-radius:10px;padding:10px 20px;cursor:pointer;font-size:14px;font-family:'JetBrains Mono',monospace;font-weight:500;transition:all .2s;width:100%;margin:16px 0}
-  .btn-add:hover{background:rgba(78,205,196,.15);border-color:rgba(78,205,196,.5)}
-  .results{background:linear-gradient(135deg,rgba(78,205,196,.06),rgba(42,183,169,.03));border:1px solid rgba(78,205,196,.15);border-radius:16px;overflow:hidden;animation:fadeIn .4s ease-out}
-  .results-header{padding:16px 24px;border-bottom:1px solid rgba(78,205,196,.1);display:flex;align-items:center;gap:8px}
-  .results-header span{font-size:12px;font-weight:600;color:#4ecdc4;text-transform:uppercase;letter-spacing:1.5px}
-  .r-value{color:#8899bb}.r-accent{color:#4ecdc4;font-weight:600}.r-error{color:#ff5050}.r-right{text-align:right}.r-dim{color:#5a6a8a}.r-warn{color:#ff9050;font-size:11px}
-  .total-section{border-top:1px solid rgba(78,205,196,.15)}
-  .total-bar{padding:20px 24px;background:rgba(78,205,196,.08);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-  .total-bar+.total-bar{border-top:1px solid rgba(78,205,196,.1)}
-  .total-label{font-size:14px;font-weight:600;color:#8899bb;text-transform:uppercase;letter-spacing:1px}
-  .total-sublabel{font-size:12px;color:#5a6a8a;margin-top:4px}
-  .total-num{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#4ecdc4;letter-spacing:-1px;text-shadow:0 0 30px rgba(78,205,196,.3)}
-  .total-num-secondary{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#e0c64f;letter-spacing:-1px;text-shadow:0 0 20px rgba(224,198,79,.2)}
-  .total-unit{font-size:18px;font-weight:500;margin-left:6px}
-  .total-sub{font-size:12px;color:#5a6a8a;margin-top:2px}
-  .canvas-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;margin-bottom:20px;overflow:hidden}
-  .canvas-header{padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
-  .canvas-header span{font-size:12px;font-weight:600;color:#4ecdc4;text-transform:uppercase;letter-spacing:1.5px}
-  #nestingCanvas{width:100%;display:block}
-  .note{margin-top:16px;padding:14px 20px;background:rgba(255,255,255,.02);border-radius:12px;border:1px solid rgba(255,255,255,.05);font-size:12px;color:#4a5a7a;line-height:1.6}
-  .note strong{color:#5a6a8a}
-  .site-footer{margin-top:32px;padding:20px 0;border-top:1px solid rgba(255,255,255,.06);text-align:center;font-size:11px;color:#3a4a6a;letter-spacing:.5px}
-  .site-footer a{color:#4ecdc4;text-decoration:none}
-  @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @media(max-width:600px){body{padding:12px 12px 0}.table-head,.item-row{grid-template-columns:36px 1fr 1fr 1fr 40px;gap:6px;padding:10px 12px}.total-num{font-size:28px}.total-num-secondary{font-size:22px}.settings-grid{grid-template-columns:1fr}.settings-col+.settings-col{border-left:none;border-top:1px solid rgba(255,255,255,.08)}.field{flex-direction:column;align-items:flex-start}.field-input-row{width:100%}}
-  /* --- Print / Screen extras --- */
-  .print-header{display:none}
-  .print-val{display:none}
-  .btn-print{background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.25);color:#4ecdc4;padding:10px 28px;border-radius:10px;font-size:14px;font-family:'JetBrains Mono',monospace;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:20px}
-  .btn-print:hover{background:rgba(78,205,196,.18);border-color:rgba(78,205,196,.5)}
 
-  @media print{
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    body{background:#fff!important;color:#000!important;padding:16px!important;font-size:12px}
-    .wrap{max-width:100%}
-    .print-header{display:flex!important;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #000;margin-bottom:20px}
-    .ph-logo{width:80px;height:64px;border:2px dashed #bbb;display:flex;align-items:center;justify-content:center;font-size:10px;color:#bbb;flex-shrink:0;border-radius:4px;text-align:center;line-height:1.4}
-    .ph-info{flex:1;margin-left:18px}
-    .ph-name{font-size:22px;font-weight:700;color:#000;font-family:'Space Grotesk',sans-serif;letter-spacing:-.5px}
-    .ph-details{font-size:11px;color:#444;margin-top:4px;line-height:1.7}
-    .ph-meta{text-align:right;font-size:11px;color:#444;min-width:130px}
-    .ph-doc-title{font-size:18px;font-weight:700;color:#000;margin-bottom:6px;letter-spacing:.5px}
-    .header{display:none!important}
-    .settings-card{display:none!important}
-    .canvas-card{display:none!important}
-    .note{display:none!important}
-    .site-footer{display:none!important}
-    .btn-add{display:none!important}
-    .btn-remove{display:none!important}
-    .btn-print{display:none!important}
-    .items-card{border:1px solid #ddd!important;background:#fff!important;border-radius:8px!important;margin-bottom:16px!important}
-    .table-head{background:#f0f0f0!important;border-bottom:1px solid #ccc!important}
-    .table-head span{color:#222!important}
-    .item-row{border-bottom:1px solid #eee!important;background:#fff!important}
-    .item-row input{display:none!important}
-    .print-val{display:inline!important;color:#000;font-size:15px;font-weight:600}
-    .row-num{color:#333!important}
-    .results{background:#fff!important;border:1px solid #ddd!important;border-radius:8px!important;animation:none!important}
-    .results-header{border-bottom:1px solid #ddd!important;background:#f0f0f0!important}
-    .results-header span{color:#000!important}
-    .results-header .dot{background:#000!important;box-shadow:none!important}
-    .r-value,.r-accent,.r-dim{color:#222!important}
-    .r-error{color:#c00!important}
-    .eff-bar{display:none!important}
-    .total-section{border-top:1px solid #ddd!important}
-    .total-bar{background:#f5f5f5!important}
-    .total-bar+.total-bar{border-top:1px solid #ddd!important}
-    .total-label{color:#222!important}
-    .total-sublabel{color:#555!important}
-    .total-num{color:#000!important;text-shadow:none!important;font-size:26px!important}
-    .total-num-secondary{color:#000!important;text-shadow:none!important;font-size:20px!important}
-    .total-unit{color:#333!important}
-    .total-sub{color:#555!important}
-    .vat-note{color:#555!important;border-top:1px solid #ddd!important}
-    .dot{box-shadow:none!important}
-  }
+<!-- ═══════════════════════════════════════════ -->
+<!--  TITLE TAG                                  -->
+<!-- ═══════════════════════════════════════════ -->
+<title>CutTool — Kalkulator za krojenje lima sa rolne | Besplatan online alat</title>
+<!-- ═══════════════════════════════════════════ -->
+<!--  META DESCRIPTION                           -->
+<!-- ═══════════════════════════════════════════ -->
+<meta name="description" content="Besplatan online kalkulator za krojenje lima sa rolne. Unesite specifikaciju profila, dobijte plan prolaza, efikasnost, otpad i kompletan predračun. Bez registracije.">
+<!-- ═══════════════════════════════════════════ -->
+<!--  META KEYWORDS                              -->
+<!-- ═══════════════════════════════════════════ -->
+<meta name="keywords" content="kalkulator za krojenje lima, plan sečenja lima, krojenje lima sa rolne, kalkulator lima, sečenje lima na meru, kalkulator otpada lima, predračun sečenja lima, krojenje metalnih profila">
+<!-- ═══════════════════════════════════════════ -->
+<!--  CANONICAL                                  -->
+<!-- ═══════════════════════════════════════════ -->
+<link rel="canonical" href="https://yourdomain.com/sr/kalkulator-krojenja-lima">
+<!-- ═══════════════════════════════════════════ -->
+<!--  HREFLANG                                   -->
+<!-- ═══════════════════════════════════════════ -->
+<link rel="alternate" hreflang="en" href="https://yourdomain.com/coil-nesting-calculator">
+<link rel="alternate" hreflang="sr" href="https://yourdomain.com/sr/kalkulator-krojenja-lima">
+<link rel="alternate" hreflang="x-default" href="https://yourdomain.com/coil-nesting-calculator">
+<!-- ═══════════════════════════════════════════ -->
+<!--  ROBOTS                                     -->
+<!-- ═══════════════════════════════════════════ -->
+<meta name="robots" content="index, follow">
+<!-- ═══════════════════════════════════════════ -->
+<!--  OPEN GRAPH                                 -->
+<!-- ═══════════════════════════════════════════ -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="CutTool — Kalkulator za krojenje lima sa rolne">
+<meta property="og:description" content="Besplatan online kalkulator za planiranje sečenja lima sa rolne. Unesite specifikaciju, dobijte plan prolaza, efikasnost i predračun. Bez registracije.">
+<meta property="og:url" content="https://yourdomain.com/sr/kalkulator-krojenja-lima">
+<meta property="og:image" content="https://yourdomain.com/og/cuttool-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="CutTool kalkulator za krojenje lima — prikaz plana prolaza i predračuna">
+<meta property="og:site_name" content="CutTool">
+<meta property="og:locale" content="sr_RS">
+<meta property="og:locale:alternate" content="en_US">
+<!-- ═══════════════════════════════════════════ -->
+<!--  TWITTER / X CARD                           -->
+<!-- ═══════════════════════════════════════════ -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CutTool — Kalkulator za krojenje lima sa rolne">
+<meta name="twitter:description" content="Planirajte sečenje lima za nekoliko sekundi. Besplatan online kalkulator za izvođače i servise za sečenje lima.">
+<meta name="twitter:image" content="https://yourdomain.com/og/cuttool-preview.png">
+<meta name="twitter:image:alt" content="CutTool — interfejs kalkulatora za krojenje lima">
+
+<!-- ═══ SCHEMA MARKUP ═══ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://yourdomain.com/sr/kalkulator-krojenja-lima#app",
+      "name": "CutTool — Kalkulator za krojenje lima sa rolne",
+      "alternateName": "CutTool",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "browserRequirements": "Zahteva JavaScript",
+      "description": "Besplatan online kalkulator za planiranje sečenja lima sa rolne. Generiše plan prolaza, izračunava efikasnost materijala, otpad i kompletan predračun sa cenom. Podrška za metrički i imperijalni sistem mera. Bez registracije.",
+      "url": "https://yourdomain.com/sr/kalkulator-krojenja-lima",
+      "screenshot": "https://yourdomain.com/og/cuttool-preview.png",
+      "inLanguage": "sr",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "RSD"
+      },
+      "featureList": [
+        "Strict i Combined (giljotinsko) algoritam sečenja",
+        "Metrički sistem (cm / mm) i imperijalni sistem (inči)",
+        "Vizuelni prikaz plana sečenja po prolazima",
+        "Proračun gubitaka na rezu i ivicama sigurnosti",
+        "Proračun cene materijala i usluge sečenja",
+        "Štampanje predračuna u PDF formatu",
+        "Bez registracije i instalacije"
+      ],
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "Izvođači krovnih i fasadnih radova, serviseri lima, limari, predračunari"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://yourdomain.com/sr/kalkulator-krojenja-lima#webpage",
+      "url": "https://yourdomain.com/sr/kalkulator-krojenja-lima",
+      "name": "CutTool — Kalkulator za krojenje lima sa rolne",
+      "description": "Besplatan online alat za planiranje sečenja lima sa rolne. Unesite specifikaciju profila, dobijte plan prolaza, efikasnost, otpad i predračun.",
+      "inLanguage": "sr",
+      "isPartOf": {
+        "@type": "WebSite",
+        "url": "https://yourdomain.com",
+        "name": "CutTool"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "inLanguage": "sr",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Šta je krojenje lima sa rolne i čemu služi ovaj kalkulator?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Krojenje lima sa rolne je proces raspoređivanja profila duž rolne lima kako bi se minimizovao otpad materijala. CutTool automatski izračunava optimalan raspored prolaza uzimajući u obzir širinu rolne, gubitke na rezu i ivice sigurnosti — bez potrebe za CAD softverom ili Excel tabelama."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Koja je razlika između Strict i Combined metode sečenja?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Strict drži svaku dužinu profila u zasebnom prolazu — jednostavno za izvođenje na svakoj mašini. Combined smešta kraće profile u preostalu širinu rolne zajedno sa dužim, čime povećava efikasnost, ali zahteva giljotinsko sečenje od ivice do ivice. Izračunajte obe metode i uporedite efikasnost pre nego što odaberete."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Da li CutTool podržava metrički sistem (cm i mm)?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Da. U metričkom sistemu možete birati između centimetara i milimetara. Ako preferirate imperijalni sistem, svi unosi idu u inčima sa decimalnim vrednostima. Sistem mera možete promeniti u bilo kom trenutku pre proračuna."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Da li CutTool čuva ili šalje moje podatke?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ne. Svi proračuni se izvršavaju lokalno u vašem pregledaču. Nijedan podatak se ne šalje na server niti čuva u bazi. Koristite dugme Štampaj predračun da sačuvate rezultate kao PDF."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Mogu li da koristim CutTool za pocinkovani čelik, ugljenik i aluminijum?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Da. CutTool radi sa svim vrstama lima koji se seče sa rolne. Unesite cenu materijala po dužnom metru za vaš konkretni materijal i alat izračunava ukupnu cenu u skladu s tim."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Šta znači efikasnost prolaza u rezultatima?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Efikasnost prolaza je procenat iskorišćene širine rolne u jednom prolazu, nakon odbitka gubitaka na rezu i ivica sigurnosti. Ukupna efikasnost u preseku je ponderisani prosek svih prolaza."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Da li je CutTool besplatan?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Da. CutTool je potpuno besplatan. Nema registracije, nema probnog perioda, nema ograničenja u korišćenju."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:        #0b0f1a;
+  --bg2:       #111827;
+  --bg3:       #161e2e;
+  --surface:   rgba(255,255,255,.04);
+  --surface2:  rgba(255,255,255,.07);
+  --border:    rgba(255,255,255,.08);
+  --border2:   rgba(255,255,255,.12);
+  --teal:      #4ecdc4;
+  --teal-dim:  rgba(78,205,196,.18);
+  --teal-glow: rgba(78,205,196,.12);
+  --amber:     #e0c64f;
+  --amber-dim: rgba(224,198,79,.12);
+  --orange:    #ff9050;
+  --text:      #dde4f0;
+  --text-2:    #8899bb;
+  --text-3:    #4a5a7a;
+  --red:       #ff5050;
+  --input-h:   36px;
+  --radius:    10px;
+}
+.light {
+  --bg:        #f4f6fa;
+  --bg2:       #eef1f7;
+  --bg3:       #ffffff;
+  --surface:   rgba(0,0,0,.03);
+  --surface2:  rgba(0,0,0,.06);
+  --border:    rgba(0,0,0,.1);
+  --border2:   rgba(0,0,0,.16);
+  --teal:      #1aa8a0;
+  --teal-dim:  rgba(26,168,160,.12);
+  --teal-glow: rgba(26,168,160,.08);
+  --amber:     #b08e00;
+  --amber-dim: rgba(176,142,0,.1);
+  --orange:    #d4622a;
+  --text:      #0f172a;
+  --text-2:    #475569;
+  --text-3:    #94a3b8;
+  --red:       #dc2626;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; transition:background .3s,color .3s; }
+.wrap { max-width:960px; margin:0 auto; padding:20px 16px 48px; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.header-left { display:flex; align-items:center; gap:12px; }
+.header-icon { width:40px; height:40px; background:linear-gradient(135deg,var(--teal),#2ab7a9); border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 16px rgba(78,205,196,.25); }
+.header-icon svg { width:20px; height:20px; }
+.header h1 { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; color:var(--text); letter-spacing:-.3px; }
+.header p { font-size:11px; color:var(--text-3); margin-top:1px; }
+.header-actions { display:flex; gap:8px; align-items:center; }
+.icon-btn { background:var(--surface); border:1px solid var(--border); color:var(--text-2); border-radius:8px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; }
+.icon-btn:hover { background:var(--surface2); border-color:var(--border2); color:var(--text); }
+.icon-btn svg { width:16px; height:16px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; margin-bottom:12px; }
+.options-toggle { display:flex; align-items:center; justify-content:space-between; width:100%; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:10px 16px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:1px; transition:all .2s; margin-bottom:0; }
+.options-toggle:hover { border-color:var(--border2); color:var(--text); }
+.options-toggle.open { border-bottom-left-radius:0; border-bottom-right-radius:0; border-bottom-color:transparent; }
+.options-toggle-left { display:flex; align-items:center; gap:8px; }
+.opts-chevron { transition:transform .2s; }
+.opts-chevron.open { transform:rotate(180deg); }
+.options-panel { display:none; background:var(--surface); border:1px solid var(--border); border-top:none; border-radius:0 0 14px 14px; margin-bottom:12px; padding:14px 16px 16px; }
+.options-panel.open { display:block; }
+.opts-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 20px; }
+.field { display:flex; flex-direction:column; gap:5px; }
+.field-label { font-size:10px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:.8px; }
+.field-input-wrap { position:relative; display:flex; align-items:center; }
+.field-input-wrap input { width:100%; height:var(--input-h); background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:0 48px 0 10px; outline:none; transition:border-color .2s,box-shadow .2s; -moz-appearance:textfield; }
+.field-input-wrap input::-webkit-inner-spin-button,.field-input-wrap input::-webkit-outer-spin-button { -webkit-appearance:none; }
+.field-input-wrap input:focus { border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-glow); }
+.field-unit { position:absolute; right:10px; color:var(--text-3); font-size:11px; pointer-events:none; white-space:nowrap; }
+.toggle-group { display:inline-flex; background:var(--bg2); border:1px solid var(--border2); border-radius:var(--radius); overflow:hidden; height:var(--input-h); }
+.toggle-group button { background:none; border:none; color:var(--text-3); font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; padding:0 12px; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.toggle-group button.active { background:var(--teal-dim); color:var(--teal); }
+.toggle-group button:hover:not(.active) { background:var(--surface2); color:var(--text-2); }
+.opts-divider { grid-column:1/-1; height:1px; background:var(--border); margin:2px 0; }
+.table-head { display:grid; grid-template-columns:36px 1fr 1fr 1fr 40px; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border); }
+.table-head span { font-size:10px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:1px; }
+.item-row { display:grid; grid-template-columns:36px 1fr 1fr 1fr 40px; gap:8px; padding:8px 16px; align-items:center; border-bottom:1px solid rgba(255,255,255,.03); transition:background .15s; }
+.light .item-row { border-bottom-color:rgba(0,0,0,.04); }
+.item-row:hover { background:var(--surface2); }
+.item-row.invalid { background:rgba(255,80,80,.04); }
+.item-row.invalid input { border-color:rgba(255,80,80,.35) !important; }
+.item-row input { width:100%; height:32px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:0 8px; outline:none; transition:border-color .15s; -moz-appearance:textfield; }
+.item-row input::-webkit-inner-spin-button,.item-row input::-webkit-outer-spin-button { -webkit-appearance:none; }
+.item-row input:focus { border-color:var(--teal); }
+.row-num { font-size:11px; color:var(--text-3); font-weight:600; text-align:center; }
+.btn-remove { background:none; border:1px solid rgba(255,80,80,.2); color:var(--red); border-radius:7px; width:32px; height:32px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; transition:all .15s; opacity:.55; }
+.btn-remove:hover { opacity:1; background:rgba(255,80,80,.1); }
+.btn-remove:disabled { opacity:.25; cursor:not-allowed; }
+.btn-add { display:block; width:calc(100% - 32px); margin:8px 16px; height:32px; background:var(--teal-dim); border:1px dashed rgba(78,205,196,.4); border-radius:8px; color:var(--teal); font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+.btn-add:hover { background:rgba(78,205,196,.2); border-color:var(--teal); }
+.results { background:var(--surface); border:1px solid rgba(78,205,196,.15); border-radius:14px; overflow:hidden; margin-bottom:12px; }
+.results-header { display:flex; align-items:center; gap:8px; padding:11px 16px; border-bottom:1px solid rgba(78,205,196,.1); }
+.results-header span { font-size:10px; font-weight:600; color:var(--teal); text-transform:uppercase; letter-spacing:1.5px; }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--teal); box-shadow:0 0 8px rgba(78,205,196,.5); flex-shrink:0; }
+.pass-row { display:grid; grid-template-columns:1fr 140px 110px; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border); align-items:center; font-size:12px; }
+.pass-label { color:var(--text-3); font-size:11px; }
+.pass-accent { color:var(--teal); font-weight:600; }
+.pass-widths { color:var(--text-2); margin-top:2px; }
+.eff-wrap { display:flex; flex-direction:column; gap:3px; }
+.eff-label { font-weight:600; }
+.eff-bar-bg { height:4px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.eff-bar-fill { height:100%; border-radius:2px; transition:width .4s ease; }
+.mixed-badge { display:inline-block; font-size:9px; background:var(--teal-dim); color:var(--teal); padding:1px 5px; border-radius:4px; margin-left:5px; letter-spacing:.5px; vertical-align:middle; }
+.r-warn { color:var(--orange); }
+.r-error { color:var(--red); }
+.r-dim { color:var(--text-3); }
+.total-section { border-top:1px solid rgba(78,205,196,.1); }
+.total-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 16px; border-bottom:1px solid var(--border); }
+.total-row:last-child { border-bottom:none; }
+.total-row-label { font-size:11px; font-weight:600; color:var(--text-2); text-transform:uppercase; letter-spacing:.8px; }
+.total-row-sub { font-size:10px; color:var(--text-3); margin-top:2px; }
+.total-row-val { text-align:right; display:flex; align-items:baseline; gap:4px; flex-shrink:0; }
+.total-row-num { font-family:'Syne',sans-serif; font-size:22px; font-weight:700; letter-spacing:-.5px; }
+.total-row-num.teal { color:var(--teal); }
+.total-row-num.amber { color:var(--amber); }
+.total-row-unit { font-size:12px; font-weight:600; color:var(--text-3); }
+.total-row.highlight { background:rgba(78,205,196,.05); }
+.total-row.grand { background:rgba(224,198,79,.07); }
+.vat-note { padding:7px 16px; font-size:10px; color:var(--text-3); text-align:right; border-top:1px solid var(--border); }
+.btn-print { display:block; width:100%; height:38px; background:var(--teal-dim); border:1px solid rgba(78,205,196,.3); border-radius:var(--radius); color:var(--teal); font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; cursor:pointer; transition:all .2s; margin-bottom:12px; }
+.btn-print:hover { background:rgba(78,205,196,.2); border-color:var(--teal); }
+.canvas-card { margin-bottom:12px; }
+.canvas-header { display:flex; align-items:center; gap:8px; padding:11px 16px; border-bottom:1px solid var(--border); }
+.canvas-header span { font-size:10px; font-weight:600; color:var(--teal); text-transform:uppercase; letter-spacing:1.5px; }
+#nestingCanvas { width:100%; display:block; }
+.section-card { padding:20px 24px; }
+.section-card h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:var(--text); margin-bottom:12px; letter-spacing:-.2px; }
+.section-card p { color:var(--text-2); line-height:1.7; margin-bottom:10px; font-size:13px; }
+.section-card p:last-child { margin-bottom:0; }
+.section-card strong { color:var(--text); font-weight:600; }
+.section-card code { background:var(--surface2); padding:1px 6px; border-radius:4px; font-size:12px; color:var(--teal); }
+.faq-list { list-style:none; }
+.faq-item { border-bottom:1px solid var(--border); }
+.faq-item:last-child { border-bottom:none; }
+.faq-q { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; background:none; border:none; padding:13px 0; cursor:pointer; text-align:left; font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; color:var(--text); transition:color .15s; }
+.faq-q:hover { color:var(--teal); }
+.faq-chevron { flex-shrink:0; transition:transform .2s; color:var(--text-3); }
+.faq-chevron.open { transform:rotate(180deg); color:var(--teal); }
+.faq-a { display:none; padding-bottom:14px; color:var(--text-2); line-height:1.7; font-size:13px; }
+.faq-a.open { display:block; }
+.faq-a p { margin-bottom:8px; }
+.faq-a p:last-child { margin-bottom:0; }
+.desc-content h3 { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); margin:18px 0 8px; }
+.desc-content h3:first-child { margin-top:0; }
+.desc-content h4 { font-size:12px; font-weight:700; color:var(--teal); text-transform:uppercase; letter-spacing:.5px; margin:12px 0 6px; }
+.desc-content ul { padding-left:18px; margin:6px 0 10px; }
+.desc-content li { color:var(--text-2); line-height:1.7; font-size:13px; margin-bottom:3px; }
+.desc-content hr { border:none; border-top:1px solid var(--border); margin:16px 0; }
+.site-footer { text-align:center; padding:24px 0 8px; font-size:10px; color:var(--text-3); border-top:1px solid var(--border); margin-top:8px; }
+.site-footer a { color:var(--teal); text-decoration:none; }
+.print-header { display:none; }
+.print-val { display:none; }
+
+@media print {
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff!important;color:#000!important;padding:16px!important;font-size:12px}
+  .wrap{max-width:100%}
+  .print-header{display:flex!important;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:2px solid #000;margin-bottom:20px}
+  .ph-name{font-size:22px;font-weight:800;font-family:'Syne',sans-serif}
+  .ph-meta{text-align:right;font-size:11px;color:#444}
+  .ph-doc-title{font-size:16px;font-weight:700;margin-bottom:4px}
+  .header{display:none!important}
+  .options-toggle,.options-panel{display:none!important}
+  .canvas-card{display:none!important}
+  .site-footer{display:none!important}
+  .btn-add{display:none!important}
+  .btn-remove{display:none!important}
+  .btn-print{display:none!important}
+  .faq-list,.desc-content,.section-card.legend-wrap{display:none!important}
+  .items-card{border:1px solid #ddd!important;background:#fff!important;border-radius:8px!important;margin-bottom:16px!important}
+  .table-head{background:#f0f0f0!important}
+  .table-head span{color:#222!important}
+  .item-row{background:#fff!important;border-bottom:1px solid #eee!important}
+  .item-row input{display:none!important}
+  .print-val{display:inline!important;color:#000;font-size:14px;font-weight:600}
+  .results{background:#fff!important;border:1px solid #ddd!important}
+  .pass-row{border-bottom:1px solid #eee!important}
+  .eff-bar-bg{display:none}
+  .total-row{background:#f5f5f5!important;border-bottom:1px solid #ddd!important}
+  .total-row-num{color:#000!important}
+  .total-row-label{color:#222!important}
+}
+
+@media (max-width:640px) {
+  .wrap{padding:12px 10px 40px}
+  .header h1{font-size:15px}
+  .opts-grid{grid-template-columns:1fr 1fr}
+  .table-head,.item-row{grid-template-columns:28px 1fr 1fr 1fr 34px;gap:5px;padding:7px 10px}
+  .pass-row{grid-template-columns:1fr 100px}
+  .pass-waste{display:none}
+  .total-row-num{font-size:18px}
+}
+
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
+
+<!-- PRINT HEADER -->
 <div class="print-header">
-  <div class="ph-logo">LOGO<br>PLACEHOLDER</div>
-  <div class="ph-info">
-    <div class="ph-name">3MD</div>
-    <div class="ph-details">PIB: 101215262<br>INDUSTRIJSKA br. 20 , 11500 Obrenovac, Srbija</div>
+  <div>
+    <div class="ph-name">CutTool</div>
+    <div style="font-size:11px;color:#555;margin-top:3px">Kalkulator za krojenje lima sa rolne</div>
   </div>
   <div class="ph-meta">
     <div class="ph-doc-title">PREDRAČUN</div>
     <div>Datum: <span id="printDate"></span></div>
   </div>
 </div>
+
 <div class="wrap">
+
+  <!-- HEADER -->
   <div class="header">
-    <div class="header-icon">⚙</div>
-    <div>
-      <h1>3MD Kalkulator lima</h1>
-      <p>Proračun dužine rolne za limene profile</p>
+    <div class="header-left">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="4" rx="1"/>
+          <rect x="3" y="10" width="12" height="4" rx="1"/>
+          <rect x="3" y="17" width="15" height="4" rx="1"/>
+        </svg>
+      </div>
+      <div>
+        <h1>CutTool</h1>
+        <p>Proračun dužine rolne za limene profile</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" aria-label="Promeni temu" title="Svetla/tamna tema">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <div class="card settings-card">
-    <div class="settings-grid">
-      <div class="settings-col">
-        <div class="col-header"><div class="dot"></div><span>Materijal</span></div>
-        <div class="field">
-          <label class="field-label" for="sirinaRolne">Širina rolne</label>
-          <div class="field-input-row"><input type="number" id="sirinaRolne" value="125" min="1" aria-label="Širina rolne" oninput="debouncedCalc()"><span class="field-unit" id="rolnaUnit">cm</span></div>
-        </div>
-        <div class="field">
-          <label class="field-label" for="jedCena">Jed. cena</label>
-          <div class="field-input-row"><input type="number" id="jedCena" value="1100" min="0" step="10" aria-label="Jedinična cena RSD/m" oninput="debouncedCalc()"><span class="field-unit">RSD/m</span></div>
-        </div>
-      </div>
-      <div class="settings-col">
-        <div class="col-header"><div class="dot" style="background:#ff9050;box-shadow:0 0 8px rgba(255,144,80,.4)"></div><span>Parametri sečenja</span></div>
-        <div class="field">
-          <label class="field-label" for="kerfInput">Razmak reza</label>
-          <div class="field-input-row"><input type="number" id="kerfInput" value="2" min="0" step="0.5" aria-label="Razmak reza mm" oninput="debouncedCalc()"><span class="field-unit">mm</span></div>
-        </div>
-        <div class="field">
-          <label class="field-label" for="safetyMargin">Ivica sigurnosti (×2)</label>
-          <div class="field-input-row"><input type="number" id="safetyMargin" value="5" min="0" step="1" aria-label="Ivica sigurnosti mm×2" oninput="debouncedCalc()"><span class="field-unit">mm</span></div>
+  <!-- OPTIONS ACCORDION -->
+  <button class="options-toggle" id="optionsToggle" onclick="toggleOptions()" aria-expanded="false" aria-controls="optionsPanel">
+    <span class="options-toggle-left">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 2.93 19.07"/><path d="M4.93 4.93A10 10 0 0 1 19.07 19.07"/></svg>
+      Opcije
+    </span>
+    <svg class="opts-chevron" id="optsChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div class="options-panel" id="optionsPanel" role="region">
+    <div class="opts-grid">
+      <div class="field">
+        <label class="field-label" for="sirinaRolne">Širina rolne</label>
+        <div class="field-input-wrap">
+          <input type="number" id="sirinaRolne" value="125" min="1" aria-label="Širina rolne" oninput="debouncedCalc()">
+          <span class="field-unit" id="rolnaUnit">cm</span>
         </div>
       </div>
-      <div class="settings-col">
-        <div class="col-header"><div class="dot" style="background:#e0c64f;box-shadow:0 0 8px rgba(224,198,79,.4)"></div><span>Postavke</span></div>
-        <div class="field">
-          <label class="field-label" for="cenaSavijanja">Cena savijanja</label>
-          <div class="field-input-row"><input type="number" id="cenaSavijanja" value="150" min="0" aria-label="Cena savijanja RSD/m" oninput="debouncedCalc()"><span class="field-unit">RSD/m</span></div>
+      <div class="field">
+        <label class="field-label" for="jedCena">Jed. cena</label>
+        <div class="field-input-wrap">
+          <input type="number" id="jedCena" value="1100" min="0" step="10" aria-label="Jedinična cena RSD/m" oninput="debouncedCalc()">
+          <span class="field-unit">RSD/m</span>
         </div>
-        <div class="field">
-          <span class="field-label">Mešanje dužina</span>
-          <div class="unit-toggle" id="mixToggle" role="group" aria-label="Režim mešanja"><button type="button" class="active" aria-pressed="true" onclick="setMixMode(true)">Kombinuj</button><button type="button" aria-pressed="false" onclick="setMixMode(false)">Strict</button></div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="cenaSavijanja">Cena savijanja</label>
+        <div class="field-input-wrap">
+          <input type="number" id="cenaSavijanja" value="150" min="0" aria-label="Cena savijanja RSD/m" oninput="debouncedCalc()">
+          <span class="field-unit">RSD/m</span>
         </div>
-        <div class="field">
-          <span class="field-label">Jedinica mere</span>
-          <div class="unit-toggle" id="unitToggle" role="group" aria-label="Izbor jedinice mere"><button type="button" class="active" aria-pressed="true" onclick="setUnit('cm')">cm</button><button type="button" aria-pressed="false" onclick="setUnit('mm')">mm</button></div>
+      </div>
+
+      <div class="opts-divider"></div>
+
+      <div class="field">
+        <label class="field-label" for="kerfInput">Razmak reza</label>
+        <div class="field-input-wrap">
+          <input type="number" id="kerfInput" value="2" min="0" step="0.5" aria-label="Razmak reza mm" oninput="debouncedCalc()">
+          <span class="field-unit">mm</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" for="safetyMargin">Ivica sigurnosti (×2)</label>
+        <div class="field-input-wrap">
+          <input type="number" id="safetyMargin" value="5" min="0" step="1" aria-label="Ivica sigurnosti mm" oninput="debouncedCalc()">
+          <span class="field-unit">mm</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Mešanje dužina</label>
+        <div class="toggle-group" id="mixToggle" role="group" aria-label="Režim mešanja">
+          <button type="button" class="active" aria-pressed="true" onclick="setMixMode(false)">Strict</button>
+          <button type="button" aria-pressed="false" onclick="setMixMode(true)">Kombinuj</button>
+        </div>
+      </div>
+
+      <div class="opts-divider"></div>
+
+      <div class="field">
+        <label class="field-label">Sistem mera</label>
+        <div class="toggle-group" id="msToggle" role="group" aria-label="Sistem mera">
+          <button type="button" class="active" aria-pressed="true" onclick="setMeasureSystem('metric')">Metrički</button>
+          <button type="button" aria-pressed="false" onclick="setMeasureSystem('imperial')">Imperijalni</button>
+        </div>
+      </div>
+      <div class="field" id="metricUnitField">
+        <label class="field-label">Jedinica mere</label>
+        <div class="toggle-group" id="unitToggle" role="group" aria-label="Izbor jedinice mere">
+          <button type="button" class="active" aria-pressed="true" onclick="setUnit('cm')">cm</button>
+          <button type="button" aria-pressed="false" onclick="setUnit('mm')">mm</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- ITEMS TABLE -->
   <div class="card items-card">
-    <div class="table-head"><span>#</span><span>Kom</span><span id="thSirina">Širina (cm)</span><span id="thDuzina">Dužina (cm)</span><span></span></div>
+    <div class="table-head">
+      <span>#</span><span>Kom</span><span id="thSirina">Širina (cm)</span><span id="thDuzina">Dužina (cm)</span><span></span>
+    </div>
     <div id="itemsContainer"></div>
-    <div style="padding:0 24px 8px"><button type="button" class="btn-add" onclick="addItem()">+ Dodaj stavku</button></div>
+    <button type="button" class="btn-add" onclick="addItem()">+ Dodaj stavku</button>
   </div>
 
-  <button type="button" class="btn-print" onclick="window.print()">Štampaj predračun</button>
-
-  <div class="results">
+  <!-- RESULTS -->
+  <div class="results" id="resultsWrap">
     <div class="results-header"><div class="dot"></div><span>Rezultat proračuna</span></div>
     <div id="resultsBody"></div>
     <div class="total-section" id="totalSection"></div>
   </div>
 
-  <div class="canvas-card">
+  <!-- PRINT BUTTON -->
+  <button type="button" class="btn-print" onclick="window.print()">Štampaj predračun</button>
+
+  <!-- VISUAL NESTING -->
+  <div class="card canvas-card">
     <div class="canvas-header"><div class="dot"></div><span>Vizuelni prikaz sečenja</span></div>
     <canvas id="nestingCanvas"></canvas>
   </div>
 
-  <div class="note">
-    <strong>Logika:</strong> Shelf-packing algoritam (giljotinsko sečenje). Razmak reza i ivica sigurnosti se uračunavaju.
-    „Kombinuj" dozvoljava kraće profile u ostatku širine. „Strict" drži svaku dužinu zasebno.
+  <!-- LEGENDA -->
+  <div class="card section-card legend-wrap">
+    <h2>Kako koristiti CutTool</h2>
+    <div class="desc-content">
+      <p>Unesite specifikaciju profila koje treba iseći u formatu <strong>komada × širina × dužina</strong> (npr. <code>4 × 35 × 240</code>). Svaki profil u novi red.</p>
+      <p>Pre proračuna proverite:</p>
+      <ul>
+        <li><strong>Širina lima</strong> — podrazumevano 125 cm; promenite prema stvarnoj rolni</li>
+        <li><strong>Razmak reza</strong> — gubitak materijala na svakom rezu (podrazumevano 2 mm)</li>
+        <li><strong>Ivice sigurnosti</strong> — slobodan prostor sa obe strane rolne (podrazumevano 2 mm)</li>
+      </ul>
+      <p><strong>Metode sečenja:</strong></p>
+      <ul>
+        <li><strong>Strict</strong> — svaka dužina profila drži se zasebno u sopstvenom prolazu. Jednostavno za izvođenje na mašini; nema složenih preseka.</li>
+        <li><strong>Kombinuj (Combined)</strong> — algoritam pokušava da smesti kraće profile u preostalu širinu iste trake. Povećava efikasnost, ali zahteva giljotinsko sečenje od ivice do ivice — proverite da li vaša mašina to podržava.</li>
+      </ul>
+      <p>Kada unesete novi profil ili menjate dimenzije postojećem, CutTool će automatski obaviti proračun. Kliknite <strong>Štampaj predračun</strong> za PDF sa punom specifikacijom.</p>
+    </div>
   </div>
-</div>
 
-<div class="site-footer">
-  © 2026 <a href="#">AMMD WEB</a> · Sva prava zadržana
+  <!-- FAQ -->
+  <div class="card section-card">
+    <h2>Česta pitanja</h2>
+    <ul class="faq-list">
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Šta je coil nesting i zašto je bitno za sečenje lima?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Coil nesting je proces raspoređivanja profila (traka) duž rolne lima tako da se što manje materijala baci kao otpad. Za razliku od shape nestinga koji se koristi u laser/plasma sečenju, coil nesting za građevinske izvođače podrazumeva giljotinsko sečenje — rez ide od ivice do ivice rolne. CutTool automatski izračunava optimalan raspored prolaza uzimajući u obzir širinu rolne, razmake rezova i ivice sigurnosti.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Kako se izračunava dužina čelične rolne?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Dužina rolne izračunava se iz spoljnog prečnika (OD), unutrašnjeg prečnika (ID) i debljine lima prema formuli: <code>L = π × (OD² − ID²) / (4 × t)</code> gde je <code>t</code> debljina lima. CutTool izračunava minimalnu potrebnu dužinu rolne na osnovu vaše specifikacije, ne iz dimenzija rolne.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Koja je razlika između Strict i Combined metode sečenja?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p><strong>Strict</strong> drži svaku grupu profila iste dužine u zasebnom prolazu. Rezultat je čist, predvidljiv plan koji je lako izvesti na svakoj mašini za sečenje.</p><p><strong>Combined</strong> pokušava da popuni preostalu širinu rolne kraćim profilima iz iste serije. Efikasnost je veća, ali plan sečenja zahteva giljotinski rez od ivice do ivice — ako mašina ne može to da izvede bez dodatnih poprečnih rezova, bolje je koristiti Strict metodu.</p><p>Preporuka: počnite sa Strict, pa prebacite na Combined i uporedite efikasnost.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Mogu li da koristim CutTool za različite vrste lima?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Da. CutTool je agnostičan prema vrsti materijala — isti algoritam primenjuje se na bilo koji lim koji se seče sa rolne: pocinkovani čelik, ugljenični čelik, aluminijum. Jedina razlika je cena materijala po dužnom metru, koju unosite ručno.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Šta znači "efikasnost" u prikazu prolaza?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Efikasnost prolaza = procenat iskorišćene širine rolne u jednom prolazu. Na primer, ako je širina rolne 125 cm, a u jednom prolazu imate profile koji zauzimaju ukupno 108 cm (zajedno sa razmakom reza i ivicama), efikasnost je 86,4%. Ukupna efikasnost na kraju je prosek svih prolaza.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Da li CutTool čuva moje podatke?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Ne. Sve se izračunava lokalno u vašem pregledaču — nijedan unos se ne šalje na server niti čuva. Svaki put kad osvežite stranicu, unosi se resetuju. Ako vam je potrebna evidencija, koristite dugme <strong>Štampaj predračun</strong> da sačuvate PDF.</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Mogu li da koristim decimalne vrednosti za mere profila?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Da. CutTool prihvata decimalne unose u svim sistemima mera. Na primer, profil od 127,5 cm može se uneti kao <code>127.5</code> (cm) ili <code>1275</code> (mm).</p></div>
+      </li>
+      <li class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Da li je CutTool besplatan?
+          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-a"><p>Da. CutTool je potpuno besplatan. Nema registracije, nema probnog perioda, nema ograničenja u korišćenju.</p></div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- LONG DESCRIPTION -->
+  <div class="card section-card">
+    <h2>CutTool — Kalkulator za krojenje lima sa rolne</h2>
+    <div class="desc-content">
+      <p><strong>Izračunajte plan sečenja lima za nekoliko sekundi. Bez Excel tabela, bez ručnog raspoređivanja.</strong></p>
+      <p>Ako kupujete lim na rolni i trebate iseći profile različitih dužina, svaki prolaz kroz mašinu mora biti unapred isplaniran — koja dužina ide sa kojom, koliko komada staje u širinu rolne, koliko rolne ukupno treba. Bez plana, materijal se troši nasumično, a greška u proračunu znači ili nedovoljno materijala na gradilištu ili rolna koja se baca.</p>
+      <p>CutTool automatizuje ovaj proračun.</p>
+      <hr>
+      <h3>Šta alat radi</h3>
+      <p>Unosite listu profila koje treba iseći — koliko komada, koje širine i dužine. CutTool raspoređuje te profile u prolaze duž rolne koristeći shelf-packing algoritam koji simulira realno giljotinsko sečenje:</p>
+      <ul>
+        <li>Uzima u obzir razmak reza (kerf) i ivice sigurnosti</li>
+        <li>Bira između Strict i Combined metode rasporeda</li>
+        <li>Izračunava ukupnu potrebnu dužinu rolne</li>
+        <li>Prikazuje efikasnost po prolazu i ukupni otpad</li>
+        <li>Dodaje cenu materijala i uslugu sečenja — dobijate kompletan predračun</li>
+      </ul>
+      <hr>
+      <h3>Za koga je CutTool napravljen</h3>
+      <h4>Građevinski izvođači i fasaderi</h4>
+      <p>Koji rade sečenje lima na meri za krovove, fasade i obloge. Umesto da raspoređujete profile na papiru ili u Excelu, unosite specifikaciju direktno u alat i za 10 sekundi imate plan sečenja i cenu.</p>
+      <h4>Dobavljači i servisi za sečenje lima</h4>
+      <p>Koji žele brzo da naprave predračun za klijenta. Unesite specifikaciju, promenite cenu materijala i usluge, kliknite Štampaj — predračun je spreman.</p>
+      <h4>Projektanti i procenitelji</h4>
+      <p>Koji planiraju nabavku materijala u ranoj fazi projekta. CutTool pomaže da procenite koliko rolni treba i koja je okvirna cena pre nego što pošaljete narudžbinu.</p>
+      <hr>
+      <h3>Bez registracije i instalacije</h3>
+      <p>CutTool radi u potpunosti u vašem pregledaču. Nema ničega za instalirati, nema registracije, a nijedan podatak se ne čuva na serveru. Vaše dimenzije, cene i liste profila ostaju na vašem uređaju.</p>
+    </div>
+  </div>
+
+  <div class="site-footer">© 2026 <a href="#">AMMD WEB</a> · Sva prava zadržana</div>
 </div>
 
 <script>
-// ========== STATE ==========
 let currentUnit = 'cm';
-let allowMixing = true;
+let measureSystem = 'metric';
+let allowMixing = false; // Strict default
 let items = [
   { id: 1, kom: 2, sirina: 33, duzina: 200 },
   { id: 2, kom: 3, sirina: 27, duzina: 150 },
@@ -227,105 +644,97 @@ let nextId = 4;
 let debounceTimer = null;
 let lastShelfResults = [];
 let lastUsableWidthMm = 0;
+let isDark = true;
 
-// ========== PALETTE ==========
-const COLORS = [
-  'rgba(78,205,196,.7)','rgba(224,198,79,.7)','rgba(255,144,80,.7)',
-  'rgba(167,139,250,.7)','rgba(251,113,133,.7)','rgba(52,211,153,.7)',
-  'rgba(96,165,250,.7)','rgba(253,186,116,.7)','rgba(244,114,182,.7)',
-  'rgba(134,239,172,.7)'
-];
-const COLORS_SOLID = [
-  '#4ecdc4','#e0c64f','#ff9050','#a78bfa','#fb7185','#34d399',
-  '#60a5fa','#fdba74','#f472b6','#86efac'
-];
+const COLORS = ['rgba(78,205,196,.7)','rgba(224,198,79,.7)','rgba(255,144,80,.7)','rgba(167,139,250,.7)','rgba(251,113,133,.7)','rgba(52,211,153,.7)','rgba(96,165,250,.7)','rgba(253,186,116,.7)','rgba(244,114,182,.7)','rgba(134,239,172,.7)'];
+const COLORS_SOLID = ['#4ecdc4','#e0c64f','#ff9050','#a78bfa','#fb7185','#34d399','#60a5fa','#fdba74','#f472b6','#86efac'];
 
-// ========== DEBOUNCE ==========
 function debouncedCalc() { clearTimeout(debounceTimer); debounceTimer = setTimeout(calculate, 150); }
 
-// ========== UNIT CONVERSION (all internal math in integer mm) ==========
-function toMm(val) { return currentUnit === 'mm' ? Math.round(val) : Math.round(val * 10); }
+function toMm(val) {
+  if (measureSystem === 'imperial') return Math.round(val * 25.4);
+  return currentUnit === 'mm' ? Math.round(val) : Math.round(val * 10);
+}
 function fmtMm(mm) {
-  if (mm >= 1000) return (mm / 1000).toFixed(2) + ' m';
-  if (currentUnit === 'mm') return mm + ' mm';
-  return (mm / 10).toFixed(1) + ' cm';
+  if (measureSystem === 'imperial') {
+    const inches = mm / 25.4;
+    return inches >= 12 ? (inches/12).toFixed(2)+' ft' : inches.toFixed(2)+'"';
+  }
+  if (mm >= 1000) return (mm/1000).toFixed(2)+' m';
+  if (currentUnit === 'mm') return mm+' mm';
+  return (mm/10).toFixed(1)+' cm';
 }
 
-// ========== LOCALSTORAGE ==========
-const LS_KEY = '3md_calc_data';
-function saveToLocal() {
-  try {
-    const data = {
-      items, currentUnit, allowMixing, nextId,
-      sirinaRolne: document.getElementById('sirinaRolne').value,
-      kerf: document.getElementById('kerfInput').value,
-      safety: document.getElementById('safetyMargin').value,
-      cena: document.getElementById('cenaSavijanja').value,
-      jedCena: document.getElementById('jedCena').value
-    };
-    localStorage.setItem(LS_KEY, JSON.stringify(data));
-  } catch(e) {}
-}
-function loadFromLocal() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return false;
-    const d = JSON.parse(raw);
-    if (d.items && d.items.length) {
-      items = d.items.map(it => ({
-        id: parseInt(it.id) || 0,
-        kom: Math.max(0, parseFloat(it.kom) || 0),
-        sirina: Math.max(0, parseFloat(it.sirina) || 0),
-        duzina: Math.max(0, parseFloat(it.duzina) || 0),
-      })).filter(it => it.id > 0);
-    }
-    const maxItemId = items.reduce((m, it) => Math.max(m, it.id), 0);
-    nextId = Math.max(d.nextId || 1, maxItemId + 1);
-    if (d.currentUnit === 'cm' || d.currentUnit === 'mm') currentUnit = d.currentUnit;
-    if (typeof d.allowMixing === 'boolean') allowMixing = d.allowMixing;
-    if (d.sirinaRolne) document.getElementById('sirinaRolne').value = d.sirinaRolne;
-    if (d.kerf) document.getElementById('kerfInput').value = d.kerf;
-    if (d.safety) document.getElementById('safetyMargin').value = d.safety;
-    if (d.cena) document.getElementById('cenaSavijanja').value = d.cena;
-    if (d.jedCena) document.getElementById('jedCena').value = d.jedCena;
-    // Sync UI toggles
-    document.getElementById('rolnaUnit').textContent = currentUnit;
-    document.getElementById('thSirina').textContent = 'Širina (' + currentUnit + ')';
-    document.getElementById('thDuzina').textContent = 'Dužina (' + currentUnit + ')';
-    document.querySelectorAll('#unitToggle button').forEach(btn => { const a = btn.textContent === currentUnit; btn.classList.toggle('active', a); btn.setAttribute('aria-pressed', a); });
-    document.querySelectorAll('#mixToggle button').forEach((btn, i) => { const a = allowMixing ? i === 0 : i === 1; btn.classList.toggle('active', a); btn.setAttribute('aria-pressed', a); });
-    return true;
-  } catch(e) { return false; }
+function toggleTheme() {
+  isDark = !isDark;
+  document.body.classList.toggle('light', !isDark);
+  localStorage.setItem('ct_theme_srb', isDark ? 'dark' : 'light');
+  const ic = document.getElementById('themeIcon');
+  if (!isDark) ic.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  else ic.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
 }
 
-// ========== ACTIONS ==========
+function toggleOptions() {
+  const panel = document.getElementById('optionsPanel');
+  const toggle = document.getElementById('optionsToggle');
+  const chevron = document.getElementById('optsChevron');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+  toggle.setAttribute('aria-expanded', !isOpen);
+}
+
+function toggleFaq(btn) {
+  const answer = btn.nextElementSibling;
+  const chevron = btn.querySelector('.faq-chevron');
+  const isOpen = answer.classList.contains('open');
+  answer.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+}
+
+function setMeasureSystem(sys) {
+  measureSystem = sys;
+  document.querySelectorAll('#msToggle button').forEach((b, i) => {
+    const a = sys === 'metric' ? i === 0 : i === 1;
+    b.classList.toggle('active', a); b.setAttribute('aria-pressed', a);
+  });
+  document.getElementById('metricUnitField').style.display = sys === 'imperial' ? 'none' : '';
+  const unitLabel = sys === 'imperial' ? 'in' : currentUnit;
+  document.getElementById('rolnaUnit').textContent = unitLabel;
+  document.getElementById('thSirina').textContent = 'Širina (' + unitLabel + ')';
+  document.getElementById('thDuzina').textContent = 'Dužina (' + unitLabel + ')';
+  saveToLocal(); calculate();
+}
+
 function setUnit(unit) {
   if (unit === currentUnit) return;
   const f = unit === 'mm' ? 10 : 0.1;
-  document.getElementById('sirinaRolne').value = Math.round(parseFloat(document.getElementById('sirinaRolne').value) * f * 100) / 100;
+  const rolnaEl = document.getElementById('sirinaRolne');
+  rolnaEl.value = Math.round(parseFloat(rolnaEl.value) * f * 100) / 100;
   items = items.map(i => ({ ...i, sirina: Math.round(i.sirina * f * 100) / 100, duzina: Math.round(i.duzina * f * 100) / 100 }));
   currentUnit = unit;
   document.getElementById('rolnaUnit').textContent = unit;
   document.getElementById('thSirina').textContent = 'Širina (' + unit + ')';
   document.getElementById('thDuzina').textContent = 'Dužina (' + unit + ')';
-  document.querySelectorAll('#unitToggle button').forEach(btn => {
-    const isActive = btn.textContent === unit;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive);
+  document.querySelectorAll('#unitToggle button').forEach(b => {
+    const a = b.textContent === unit; b.classList.toggle('active', a); b.setAttribute('aria-pressed', a);
   });
   render();
 }
-function setMixMode(allow) {
-  allowMixing = allow;
-  document.querySelectorAll('#mixToggle button').forEach((btn, i) => {
-    const isActive = allow ? i === 0 : i === 1;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive);
+
+function setMixMode(a) {
+  allowMixing = a;
+  document.querySelectorAll('#mixToggle button').forEach((b, i) => {
+    const act = a ? i === 1 : i === 0; b.classList.toggle('active', act); b.setAttribute('aria-pressed', act);
   });
   calculate();
 }
+
 function addItem() {
-  items.push({ id: nextId++, kom: 1, sirina: currentUnit === 'mm' ? 100 : 10, duzina: currentUnit === 'mm' ? 1000 : 100 });
+  const defS = measureSystem === 'imperial' ? 4 : (currentUnit === 'mm' ? 100 : 10);
+  const defD = measureSystem === 'imperial' ? 40 : (currentUnit === 'mm' ? 1000 : 100);
+  items.push({ id: nextId++, kom: 1, sirina: defS, duzina: defD });
   render();
 }
 function removeItem(id) { if (items.length <= 1) return; clearTimeout(debounceTimer); items = items.filter(i => i.id !== id); render(); }
@@ -335,11 +744,42 @@ function updateItem(id, field, value) {
   debouncedCalc();
 }
 
+const LS_KEY = 'cuttool_srb';
+function saveToLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ items, currentUnit, measureSystem, allowMixing, nextId, sirinaRolne: document.getElementById('sirinaRolne').value, kerf: document.getElementById('kerfInput').value, safety: document.getElementById('safetyMargin').value, cena: document.getElementById('cenaSavijanja').value, jedCena: document.getElementById('jedCena').value })); } catch(e) {}
+}
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (d.items && d.items.length) items = d.items.map(it => ({ id: parseInt(it.id)||0, kom: Math.max(0, parseFloat(it.kom)||0), sirina: Math.max(0, parseFloat(it.sirina)||0), duzina: Math.max(0, parseFloat(it.duzina)||0) })).filter(it => it.id > 0);
+    const maxId = items.reduce((m, it) => Math.max(m, it.id), 0);
+    nextId = Math.max(d.nextId || 1, maxId + 1);
+    if (d.currentUnit === 'cm' || d.currentUnit === 'mm') currentUnit = d.currentUnit;
+    if (d.measureSystem === 'metric' || d.measureSystem === 'imperial') measureSystem = d.measureSystem;
+    if (typeof d.allowMixing === 'boolean') allowMixing = d.allowMixing;
+    if (d.sirinaRolne) document.getElementById('sirinaRolne').value = d.sirinaRolne;
+    if (d.kerf) document.getElementById('kerfInput').value = d.kerf;
+    if (d.safety) document.getElementById('safetyMargin').value = d.safety;
+    if (d.cena) document.getElementById('cenaSavijanja').value = d.cena;
+    if (d.jedCena) document.getElementById('jedCena').value = d.jedCena;
+    const unitLabel = measureSystem === 'imperial' ? 'in' : currentUnit;
+    document.getElementById('rolnaUnit').textContent = unitLabel;
+    document.getElementById('thSirina').textContent = 'Širina (' + unitLabel + ')';
+    document.getElementById('thDuzina').textContent = 'Dužina (' + unitLabel + ')';
+    document.querySelectorAll('#unitToggle button').forEach(b => { const a = b.textContent === currentUnit; b.classList.toggle('active', a); b.setAttribute('aria-pressed', a); });
+    document.querySelectorAll('#mixToggle button').forEach((b, i) => { const act = allowMixing ? i === 1 : i === 0; b.classList.toggle('active', act); b.setAttribute('aria-pressed', act); });
+    document.querySelectorAll('#msToggle button').forEach((b, i) => { const a = measureSystem === 'metric' ? i === 0 : i === 1; b.classList.toggle('active', a); b.setAttribute('aria-pressed', a); });
+    if (measureSystem === 'imperial') document.getElementById('metricUnitField').style.display = 'none';
+    return true;
+  } catch(e) { return false; }
+}
+
 function render() {
-  const c = document.getElementById('itemsContainer');
-  c.innerHTML = items.map((item, idx) => {
+  document.getElementById('itemsContainer').innerHTML = items.map((item, idx) => {
     const inv = item.kom <= 0 || item.sirina <= 0 || item.duzina <= 0;
-    return `<div class="item-row ${inv ? 'invalid' : ''}" data-item-id="${item.id}">
+    return `<div class="item-row ${inv?'invalid':''}" data-item-id="${item.id}">
       <span class="row-num">${String(idx+1).padStart(2,'0')}</span>
       <input type="number" value="${item.kom}" min="1" data-field="kom" aria-label="Količina ${idx+1}"><span class="print-val">${item.kom}</span>
       <input type="number" value="${item.sirina}" min="0.1" data-field="sirina" aria-label="Širina ${idx+1}"><span class="print-val">${item.sirina}</span>
@@ -350,7 +790,6 @@ function render() {
   calculate();
 }
 
-// ========== MAIN CALCULATION ==========
 function calculate() {
   const sirinaRolneMm = toMm(parseFloat(document.getElementById('sirinaRolne').value) || 0);
   const kerfMm = parseFloat(document.getElementById('kerfInput').value) || 0;
@@ -358,15 +797,13 @@ function calculate() {
   const usableWidthMm = sirinaRolneMm - safetyMm * 2;
 
   if (sirinaRolneMm <= 0 || usableWidthMm <= 0) {
-    document.getElementById('resultsBody').innerHTML = '<div style="padding:16px 24px;color:#ff5050;">Unesite validnu širinu rolne.</div>';
+    document.getElementById('resultsBody').innerHTML = '<div style="padding:12px 16px;color:var(--red);font-size:12px">Unesite validnu širinu rolne.</div>';
     document.getElementById('totalSection').innerHTML = '';
-    lastShelfResults = []; lastUsableWidthMm = 0; drawNesting(); saveToLocal();
-    return;
+    lastShelfResults = []; lastUsableWidthMm = 0; drawNesting(); saveToLocal(); return;
   }
 
   let ukupnoSavijanjeMm = 0;
   const allStrips = [], errors = [], warnings = [];
-
   items.forEach((item, idx) => {
     const sMm = toMm(item.sirina), dMm = toMm(item.duzina), kom = Math.floor(item.kom);
     if (kom <= 0 || sMm <= 0 || dMm <= 0) { warnings.push(idx); return; }
@@ -377,25 +814,18 @@ function calculate() {
 
   allStrips.sort((a, b) => b.dMm - a.dMm || b.sMm - a.sMm);
   const shelves = [];
-
   allStrips.forEach(strip => {
     if (strip.placed) return;
-    let bestShelf = -1, bestLeftover = Infinity;
+    let best = -1, bestL = Infinity;
     for (let i = 0; i < shelves.length; i++) {
       const sh = shelves[i];
       if (!allowMixing && strip.dMm !== sh.dMm) continue;
       if (strip.dMm > sh.dMm) continue;
-      const needed = sh.widthUsedMm + kerfMm + strip.sMm;
-      if (needed <= usableWidthMm) { const l = usableWidthMm - needed; if (l < bestLeftover) { bestLeftover = l; bestShelf = i; } }
+      const n = sh.widthUsedMm + kerfMm + strip.sMm;
+      if (n <= usableWidthMm) { const l = usableWidthMm - n; if (l < bestL) { bestL = l; best = i; } }
     }
-    if (bestShelf >= 0) {
-      shelves[bestShelf].widthUsedMm += kerfMm + strip.sMm;
-      shelves[bestShelf].strips.push(strip);
-      strip.placed = true;
-    } else {
-      shelves.push({ dMm: strip.dMm, widthUsedMm: strip.sMm, strips: [strip] });
-      strip.placed = true;
-    }
+    if (best >= 0) { shelves[best].widthUsedMm += kerfMm + strip.sMm; shelves[best].strips.push(strip); strip.placed = true; }
+    else { shelves.push({ dMm: strip.dMm, widthUsedMm: strip.sMm, strips: [strip] }); strip.placed = true; }
   });
 
   const shelfResults = shelves.map(shelf => {
@@ -404,39 +834,43 @@ function calculate() {
     const kerfArea = shelf.strips.length > 1 ? (shelf.strips.length - 1) * kerfMm * shelf.dMm : 0;
     const byLen = {};
     shelf.strips.forEach(st => { if (!byLen[st.dMm]) byLen[st.dMm] = []; byLen[st.dMm].push(st); });
-    Object.values(byLen).forEach(arr => arr.sort((a, b) => b.sMm - a.sMm));
+    Object.values(byLen).forEach(a => a.sort((a, b) => b.sMm - a.sMm));
     return { ...shelf, usedArea, kerfArea, totalArea, wasteArea: totalArea - usedArea - kerfArea, efficiency: totalArea > 0 ? (usedArea + kerfArea) / totalArea * 100 : 0, byLen };
   });
 
-  lastShelfResults = shelfResults;
-  lastUsableWidthMm = usableWidthMm;
+  lastShelfResults = shelfResults; lastUsableWidthMm = usableWidthMm;
 
-  // ---- RENDER HTML ----
   const body = document.getElementById('resultsBody');
   let html = '';
-  warnings.forEach(idx => { html += `<div style="padding:10px 24px;border-bottom:1px solid rgba(255,255,255,.04)"><span class="r-warn">⚠ Stavka ${idx+1} — nevalidne vrednosti, preskočena</span></div>`; });
-  errors.forEach(idx => { const it = items[idx]; html += `<div style="padding:10px 24px;border-bottom:1px solid rgba(255,255,255,.04)"><span class="r-error">✕ Stavka ${idx+1} (${it.sirina} ${currentUnit}) — profil širi od korisne širine (${fmtMm(usableWidthMm)})!</span></div>`; });
+  warnings.forEach(idx => { html += `<div style="padding:8px 16px;border-bottom:1px solid var(--border);font-size:11px"><span class="r-warn">⚠ Stavka ${idx+1} — nevalidne vrednosti, preskočena</span></div>`; });
+  errors.forEach(idx => { const it = items[idx]; html += `<div style="padding:8px 16px;border-bottom:1px solid var(--border);font-size:11px"><span class="r-error">✕ Stavka ${idx+1} (${it.sirina}) — širi od korisne širine (${fmtMm(usableWidthMm)})</span></div>`; });
 
   shelfResults.forEach((shelf, pi) => {
     const lengths = Object.keys(shelf.byLen).sort((a, b) => b - a);
     const isMixed = lengths.length > 1;
-    let sd = '';
+    let widthsHtml = '';
     lengths.forEach(len => {
-      const strips = shelf.byLen[len], w = strips.map(s => fmtMm(s.sMm)).join(' + ');
-      if (isMixed) sd += `<div style="margin:2px 0"><span style="color:#5a6a8a;font-size:11px">@${fmtMm(+len)}:</span> <span class="r-value">${w}</span></div>`;
-      else sd += `<span class="r-value">${w}</span>`;
+      const strips = shelf.byLen[len];
+      const w = strips.map(s => fmtMm(s.sMm)).join(' + ');
+      if (isMixed) widthsHtml += `<div style="color:var(--text-3);font-size:10px">@${fmtMm(+len)}:</div><div class="pass-widths">${w}</div>`;
+      else widthsHtml += `<div class="pass-widths">${w}</div>`;
     });
-    const ec = shelf.efficiency > 85 ? '#4ecdc4' : shelf.efficiency > 60 ? '#e0c64f' : '#ff9050';
+    const ec = shelf.efficiency > 85 ? 'var(--teal)' : shelf.efficiency > 60 ? 'var(--amber)' : 'var(--orange)';
     const wd = shelf.wasteArea >= 1e6 ? (shelf.wasteArea/1e6).toFixed(2)+' m²' : shelf.wasteArea >= 1e4 ? (shelf.wasteArea/1e4).toFixed(0)+' cm²' : shelf.wasteArea+' mm²';
-    html += `<div style="padding:14px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:13px;align-items:start">
-      <div><div style="margin-bottom:4px"><span class="r-dim">Prolaz ${pi+1}</span> <span class="r-accent">${fmtMm(shelf.dMm)}</span>${isMixed?'<span style="font-size:10px;background:rgba(78,205,196,.15);color:#4ecdc4;padding:2px 6px;border-radius:4px;margin-left:6px">KOMBINOVAN</span>':''}</div>${sd}</div>
-      <div class="r-value" style="padding-top:2px">efikasnost: <span style="color:${ec};font-weight:600">${shelf.efficiency.toFixed(0)}%</span><div class="eff-bar" style="margin-top:4px;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:${shelf.efficiency}%;background:${ec};border-radius:3px"></div></div></div>
-      <div class="r-right" style="padding-top:2px"><span class="r-dim">otpad: </span><span style="color:${shelf.wasteArea>shelf.totalArea*.3?'#ff9050':'#5a6a8a'};font-weight:500">${wd}</span></div>
+    html += `<div class="pass-row">
+      <div>
+        <div><span class="r-dim" style="font-size:10px">Prolaz ${pi+1}</span> <span class="pass-accent">${fmtMm(shelf.dMm)}</span>${isMixed?'<span class="mixed-badge">KOMBINOVAN</span>':''}</div>
+        ${widthsHtml}
+      </div>
+      <div class="eff-wrap">
+        <span class="eff-label" style="color:${ec};font-size:12px">${shelf.efficiency.toFixed(0)}%</span>
+        <div class="eff-bar-bg"><div class="eff-bar-fill" style="width:${shelf.efficiency}%;background:${ec}"></div></div>
+      </div>
+      <div class="pass-waste r-dim" style="text-align:right;font-size:11px;color:${shelf.wasteArea > shelf.totalArea*.3?'var(--orange)':'var(--text-3)'}">otpad: ${wd}</div>
     </div>`;
   });
   body.innerHTML = html;
 
-  // ---- TOTALS ----
   const totLen = shelfResults.reduce((s, p) => s + p.dMm, 0);
   const totArea = shelfResults.reduce((s, p) => s + p.totalArea, 0);
   const usedArea = shelfResults.reduce((s, p) => s + p.usedArea, 0);
@@ -453,129 +887,83 @@ function calculate() {
   const safeNote = safetyMm > 0 ? ` · ivica ${safetyMm}mm×2` : '';
 
   document.getElementById('totalSection').innerHTML = `
-    <div class="total-bar"><div><span class="total-label">Ukupna dužina rolne</span><div class="total-sublabel">${shelfResults.length} prolaza${komb>0?` (${komb} komb.)`:''} · efikasnost ${eff}%${kerfMm>0?` · rez ${kerfMm}mm`:''}${safeNote}</div></div><div style="text-align:right"><span class="total-num">${(totLen/1000).toFixed(2)}</span><span class="total-unit" style="color:#2ab7a9">m</span><div class="total-sub">(${fmtMm(totLen)})</div></div></div>
-    <div class="total-bar" style="background:rgba(224,198,79,.06)"><div><span class="total-label">Usluga savijanja lima</span><div class="total-sublabel">zbir (kom × dužina) svih profila</div></div><div style="text-align:right"><span class="total-num-secondary">${savM}</span><span class="total-unit" style="color:#c4a830">m</span><div class="total-sub">(${fmtMm(ukupnoSavijanjeMm)})</div></div></div>
-    <div class="total-bar" style="background:rgba(78,205,196,.05)"><div><span class="total-label">Cena materijala</span><div class="total-sublabel">${(totLen/1000).toFixed(2)} m × ${jedCenaVal.toLocaleString('sr-RS')} RSD/m</div></div><div style="text-align:right"><span class="total-num-secondary">${cenaMaterijala.toLocaleString('sr-RS')}</span><span class="total-unit" style="color:#c4a830">RSD</span></div></div>
-    <div class="total-bar" style="background:rgba(224,198,79,.04)"><div><span class="total-label">Cena savijanja</span><div class="total-sublabel">${savM} m × ${cena.toLocaleString('sr-RS')} RSD/m</div></div><div style="text-align:right"><span class="total-num-secondary">${cenaTotal.toLocaleString('sr-RS')}</span><span class="total-unit" style="color:#c4a830">RSD</span></div></div>
-    <div class="total-bar" style="background:rgba(78,205,196,.12)"><div><span class="total-label">Ukupna cena</span><div class="total-sublabel">Cena materijala + Cena savijanja</div></div><div style="text-align:right"><span class="total-num" style="color:#e0c64f;text-shadow:0 0 30px rgba(224,198,79,.3)">${ukupnaCena.toLocaleString('sr-RS')}</span><span class="total-unit" style="color:#c4a830">RSD</span></div></div>
-    <div style="padding:10px 24px;font-size:11px;color:#5a6a8a;text-align:right" class="vat-note">PDV je uračunat u cenu</div>
+    <div class="total-row highlight">
+      <div><div class="total-row-label">Ukupna dužina rolne</div><div class="total-row-sub">${shelfResults.length} prolaza${komb>0?` (${komb} komb.)`:''} · efikasnost ${eff}%${kerfMm>0?` · rez ${kerfMm}mm`:''}${safeNote}</div></div>
+      <div class="total-row-val"><span class="total-row-num teal">${(totLen/1000).toFixed(2)}</span><span class="total-row-unit" style="color:var(--teal)">m</span></div>
+    </div>
+    <div class="total-row">
+      <div><div class="total-row-label">Usluga savijanja lima</div><div class="total-row-sub">zbir (kom × dužina) svih profila</div></div>
+      <div class="total-row-val"><span class="total-row-num amber">${savM}</span><span class="total-row-unit">m</span></div>
+    </div>
+    <div class="total-row">
+      <div><div class="total-row-label">Cena materijala</div><div class="total-row-sub">${(totLen/1000).toFixed(2)} m × ${jedCenaVal.toLocaleString('sr-RS')} RSD/m</div></div>
+      <div class="total-row-val"><span class="total-row-num amber">${cenaMaterijala.toLocaleString('sr-RS')}</span><span class="total-row-unit">RSD</span></div>
+    </div>
+    <div class="total-row">
+      <div><div class="total-row-label">Cena savijanja</div><div class="total-row-sub">${savM} m × ${cena.toLocaleString('sr-RS')} RSD/m</div></div>
+      <div class="total-row-val"><span class="total-row-num amber">${cenaTotal.toLocaleString('sr-RS')}</span><span class="total-row-unit">RSD</span></div>
+    </div>
+    <div class="total-row grand">
+      <div><div class="total-row-label" style="color:var(--text)">Ukupna cena</div><div class="total-row-sub">Cena materijala + Cena savijanja</div></div>
+      <div class="total-row-val"><span class="total-row-num amber" style="font-size:28px">${ukupnaCena.toLocaleString('sr-RS')}</span><span class="total-row-unit" style="color:var(--amber)">RSD</span></div>
+    </div>
+    <div class="vat-note">PDV je uračunat u cenu</div>
   `;
-
-  drawNesting();
-  saveToLocal();
+  drawNesting(); saveToLocal();
 }
 
-// ========== CANVAS VISUALIZATION ==========
 function drawNesting() {
   const canvas = document.getElementById('nestingCanvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  const shelves = lastShelfResults;
-  const usableW = lastUsableWidthMm;
-
+  const shelves = lastShelfResults, usableW = lastUsableWidthMm;
   if (!shelves.length || usableW <= 0) {
-    canvas.height = 60;
-    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = 50; canvas.width = canvas.parentElement.clientWidth;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#3a4a6a';
-    ctx.font = '13px JetBrains Mono';
-    ctx.textAlign = 'center';
-    ctx.fillText('Nema podataka za prikaz', canvas.width / 2, 35);
-    return;
+    ctx.fillStyle = isDark ? '#3a4a6a' : '#94a3b8';
+    ctx.font = '12px JetBrains Mono'; ctx.textAlign = 'center';
+    ctx.fillText('Nema podataka za prikaz', canvas.width / 2, 30); return;
   }
-
-  const cw = canvas.parentElement.clientWidth;
-  const pad = 24;
-  const rowH = 52;
-  const labelW = 70;
-  const drawW = cw - pad * 2 - labelW;
-  const gap = 8;
+  const cw = canvas.parentElement.clientWidth, pad = 16, rowH = 48, labelW = 50, drawW = cw - pad*2 - labelW, gap = 6;
   const totalH = pad + shelves.length * (rowH + gap) + pad;
-
-  canvas.width = cw;
-  canvas.height = totalH;
-  ctx.clearRect(0, 0, cw, totalH);
-
+  canvas.width = cw; canvas.height = totalH; ctx.clearRect(0, 0, cw, totalH);
   const maxLen = Math.max(...shelves.map(s => s.dMm));
-  const scaleX = drawW / maxLen;
-  const scaleY = rowH / usableW;
-
+  const scaleX = drawW / maxLen, scaleY = rowH / usableW;
   shelves.forEach((shelf, si) => {
-    const x0 = pad + labelW;
-    const y0 = pad + si * (rowH + gap);
-    const shelfW = Math.max(shelf.dMm * scaleX, 1);
-
-    ctx.fillStyle = 'rgba(255,255,255,.03)';
+    const x0 = pad + labelW, y0 = pad + si * (rowH + gap), shelfW = Math.max(shelf.dMm * scaleX, 1);
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.04)';
     ctx.fillRect(x0, y0, shelfW, rowH);
-    ctx.strokeStyle = 'rgba(255,255,255,.1)';
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.12)';
     ctx.strokeRect(x0, y0, shelfW, rowH);
-
-    let currentY = 0;
-    const sorted = [...shelf.strips].sort((a, b) => b.sMm - a.sMm);
-    sorted.forEach(strip => {
-      const sw = strip.dMm * scaleX;
-      const sh = strip.sMm * scaleY;
-      const color = COLORS[strip.stavkaIdx % COLORS.length];
-      const solidColor = COLORS_SOLID[strip.stavkaIdx % COLORS_SOLID.length];
-
-      ctx.fillStyle = color;
-      ctx.fillRect(x0, y0 + currentY, sw, sh);
-      ctx.strokeStyle = solidColor;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x0, y0 + currentY, sw, sh);
-
+    let curY = 0;
+    [...shelf.strips].sort((a, b) => b.sMm - a.sMm).forEach(strip => {
+      const sw = strip.dMm * scaleX, sh = strip.sMm * scaleY;
+      ctx.fillStyle = COLORS[strip.stavkaIdx % COLORS.length]; ctx.fillRect(x0, y0 + curY, sw, sh);
+      ctx.strokeStyle = COLORS_SOLID[strip.stavkaIdx % COLORS_SOLID.length]; ctx.lineWidth = 1; ctx.strokeRect(x0, y0 + curY, sw, sh);
       if (sh > 12 && sw > 40) {
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px JetBrains Mono';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        const label = fmtMm(strip.sMm) + '×' + fmtMm(strip.dMm);
-        ctx.fillText(label, x0 + 4, y0 + currentY + sh / 2);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px JetBrains Mono'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(fmtMm(strip.sMm)+'×'+fmtMm(strip.dMm), x0+4, y0+curY+sh/2);
       }
-
-      currentY += sh;
+      curY += sh;
     });
-
-    if (currentY < rowH) {
-      ctx.fillStyle = 'rgba(255,80,80,.06)';
-      ctx.fillRect(x0, y0 + currentY, shelfW, rowH - currentY);
-      ctx.strokeStyle = 'rgba(255,80,80,.15)';
-      ctx.lineWidth = 0.5;
-      for (let hx = 0; hx < shelfW; hx += 8) {
-        ctx.beginPath();
-        ctx.moveTo(x0 + hx, y0 + currentY);
-        ctx.lineTo(x0 + hx + (rowH - currentY), y0 + rowH);
-        ctx.stroke();
-      }
+    if (curY < rowH) {
+      ctx.fillStyle = 'rgba(255,80,80,.06)'; ctx.fillRect(x0, y0+curY, shelfW, rowH-curY);
+      ctx.strokeStyle = 'rgba(255,80,80,.15)'; ctx.lineWidth = .5;
+      for (let hx=0; hx<shelfW; hx+=8) { ctx.beginPath(); ctx.moveTo(x0+hx, y0+curY); ctx.lineTo(x0+hx+(rowH-curY), y0+rowH); ctx.stroke(); }
     }
-
-    ctx.fillStyle = '#5a6a8a';
-    ctx.font = '11px JetBrains Mono';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('P' + (si + 1), x0 - 8, y0 + rowH / 2);
+    ctx.fillStyle = isDark ? '#5a6a8a' : '#94a3b8'; ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('P'+(si+1), x0-6, y0+rowH/2);
   });
 }
 
-// ========== EVENT DELEGATION ==========
 function initDelegation() {
   const c = document.getElementById('itemsContainer');
-  c.addEventListener('input', (e) => {
-    const row = e.target.closest('[data-item-id]');
-    if (!row) return;
-    const id = parseInt(row.dataset.itemId);
-    const field = e.target.dataset.field;
-    if (id && field) updateItem(id, field, e.target.value);
-  });
-  c.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-remove-id]');
-    if (!btn) return;
-    const id = parseInt(btn.dataset.removeId);
-    if (id) removeItem(id);
-  });
+  c.addEventListener('input', e => { const row = e.target.closest('[data-item-id]'); if (!row) return; const id = parseInt(row.dataset.itemId); const field = e.target.dataset.field; if (id && field) updateItem(id, field, e.target.value); });
+  c.addEventListener('click', e => { const btn = e.target.closest('[data-remove-id]'); if (!btn) return; const id = parseInt(btn.dataset.removeId); if (id) removeItem(id); });
 }
 
-// ========== INIT ==========
+const savedTheme = localStorage.getItem('ct_theme_srb');
+if (savedTheme === 'light') { isDark = false; document.body.classList.add('light'); document.getElementById('themeIcon').innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'; }
 loadFromLocal();
 initDelegation();
 render();
